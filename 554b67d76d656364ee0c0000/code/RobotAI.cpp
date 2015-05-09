@@ -51,10 +51,13 @@ RobotAI_Order go(double x,double y,const RobotAI_BattlefieldInformation& info, i
 	return order;
 
 }
+
 double dis(double x1, double y1, double x2, double y2){
 	return sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
 }
-
+double dis(const Circle& a, const Circle& b){
+	return dis(a.x, a.y, b.x, b.y);
+}
 void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID)
 {
 	//帧操纵函数
@@ -85,7 +88,19 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	}
 
-	static double mlx = -1, mly = -1;
+	for (int i = 0; i < info.num_bullet; i++){
+		const auto& bullet = info.bulletInformation[i];
+		if (bullet.launcherID != myID){
+			if (dis(me.circle.x, me.circle.y,bullet.circle.x,bullet.circle.y) < 50){
+				order.run = 0;
+				
+			}
+			
+		}
+	}
+
+
+	static double mlx = me.circle.x, mly = me.circle.y;
 	if (mlx == me.circle.x && mly == me.circle.y){
 		order.run = -1;
 		order.eturn = 1;
@@ -93,10 +108,10 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	mlx = me.circle.x;
 	mly = me.circle.y;
 
-
-	static double elx=-1, ely=-1;
-	double eex = 5 * (target.circle.x - elx) + target.circle.x;
-	double eey = 5 * (target.circle.y - ely) + target.circle.y;
+	double emdis = dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y);
+	static double elx = target.circle.x, ely = target.circle.y;
+	double eex = emdis/15.0 * (target.circle.x - elx) + target.circle.x;
+	double eey = emdis/15.0 * (target.circle.y - ely) + target.circle.y;
 
 	elx = target.circle.x;
 	ely = target.circle.y;
