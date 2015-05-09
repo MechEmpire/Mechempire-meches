@@ -131,7 +131,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			for (int j = 0; j < info.num_obstacle; ++j){
 				double ddd = dis(tx, ty, info.obstacle[j].x, info.obstacle[j].y);
 				//cout <<j<<" "<<tx<<" "<<ty<<" "<< ddd << endl;
-				if (ddd<= info.obstacle[j].r)
+				if (ddd< info.obstacle[j].r+3)
 					blocked = true;
 			}
 			if (blocked)
