@@ -179,10 +179,8 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				order.eturn = -1;
 			}
 		}
-		else {
-			order.run = 0;
+		else 
 			order.eturn = -1;
-		}
 	}
 	else if (arsenal_dtheta >= -180 && arsenal_dtheta <= -10){
 		order.eturn = 1;
