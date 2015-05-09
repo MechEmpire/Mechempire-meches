@@ -7,7 +7,7 @@
 #include <iostream>
 RobotAI::RobotAI()
 {
-	srand((unsigned)time(0));
+	
 }
 
 
@@ -15,7 +15,11 @@ RobotAI::~RobotAI()
 {
 
 }
-
+struct xxxx{
+	xxxx(){
+		srand((unsigned)time(0));
+	}
+}_xxx;
 
 //-----------------------------------------------------
 //1.必须完成的战斗核心
@@ -59,6 +63,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
+
 	auto& me = info.robotInformation[myID];
 	auto& arsenal = info.arsenal;
 	double dis0 = dis(me.circle.x, me.circle.y, arsenal[0].circle.x, arsenal[0].circle.y);
@@ -75,13 +80,30 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	else if (info.arsenal[q].respawning_time == 0){
 		order = go(info.arsenal[q].circle.x, info.arsenal[q].circle.y, info, myID);
 	}else{
-		order.run = -1;
+		order.run = 1;
+		order.eturn = 1;
 
 	}
 
+	static double mlx = -1, mly = -1;
+	if (mlx == me.circle.x && mly == me.circle.y){
+		order.run = -1;
+		order.eturn = 1;
+	}
+	mlx = me.circle.x;
+	mly = me.circle.y;
+
+
+	static double elx=-1, ely=-1;
+	double eex = 5 * (target.circle.x - elx) + target.circle.x;
+	double eey = 5 * (target.circle.y - ely) + target.circle.y;
+
+	elx = target.circle.x;
+	ely = target.circle.y;
+
 	//order.wturn = 1;
 	
-	double the = atan2(target.circle.y - me.circle.y, target.circle.x - me.circle.x)*180.0 / PI;
+	double the = atan2(eey - me.circle.y, eex - me.circle.x)*180.0 / PI;
 	double wp = me.weaponRotation;
 
 	double di = the - wp;
@@ -95,13 +117,33 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		//cout << "-1\n";
 		order.wturn = -1;
 	}
-	double miss = dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y)*tan(di * PI / 180.0 / 2);
+	double miss = dis(me.circle.x, me.circle.y, eex, eey)*tan(di * PI / 180.0 / 2);
 	//cout << miss << endl;
 	if (miss < 10){
+		//cout << "fire\n";
 		order.fire = 1;
+		bool blocked = false;
+		const int TN = 10;
+		//cout << me.circle.x << " " << me.circle.y << " " << eex << " " << eey << endl;
+		for (int i = 0; i < TN; i++){
+			double tx = me.circle.x + (eex - me.circle.x)*i / TN;
+			double ty = me.circle.y + (eey - me.circle.y)*i / TN;
+			for (int j = 0; j < info.num_obstacle; ++j){
+				double ddd = dis(tx, ty, info.obstacle[j].x, info.obstacle[j].y);
+				//cout <<j<<" "<<tx<<" "<<ty<<" "<< ddd << endl;
+				if (ddd<= info.obstacle[j].r)
+					blocked = true;
+			}
+			if (blocked)
+				break;
+		}
+		if (blocked){
+			order.fire = 0;
+		}
+
 	}
 	else{
-		order.fire = 2;
+		order.fire = 0;
 	}
 
 	
@@ -120,7 +162,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_MineLayer;	
+	weapon = WT_Cannon;	
 	engine = ET_UFO;
 }
 
