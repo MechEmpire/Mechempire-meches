@@ -43,7 +43,8 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	double enemy_x = info.robotInformation[1 - myID].circle.x;
 	double enemy_y = info.robotInformation[1 - myID].circle.y;
 	double enemy_r = info.robotInformation[1 - myID].circle.r;
-	weapontypename enemy_weapon = info.robotInformation[1 - myID].weaponTypeName;
+	double enemy_ = info.robotInformation[1 - myID].vr;
+ 	weapontypename enemy_weapon = info.robotInformation[1 - myID].weaponTypeName;
 	double enemy_theta;
 	double distance = sqrt(pow((enemy_y - robot_y), 2) + pow((enemy_x - robot_x), 2)) - 100 - enemy_r;
 	if (enemy_lastx == 0){
@@ -52,14 +53,14 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	}
 	double enemy_nextx = enemy_x + (enemy_x - enemy_lastx)*(distance / 14);
 	double enemy_nexty = enemy_y + (enemy_y - enemy_lasty)*(distance / 14);
-	if (enemy_nextx < 50)
-		enemy_nextx = 50;
-	else if (enemy_nextx > 1300)
+	if (enemy_nextx < 100)
+		enemy_nextx = 100;
+	else if (enemy_nextx > 1266)
 		enemy_nextx = 1300;
-	if (enemy_nexty < 50)
-		enemy_nexty = 50;
-	else if (enemy_nexty > 630)
-		enemy_nexty = 630;
+	if (enemy_nexty < 100)
+		enemy_nexty = 100;
+	else if (enemy_nexty > 580)
+		enemy_nexty = 580;
 	enemy_lastx = enemy_x;
 	enemy_lasty = enemy_y;
 
@@ -170,7 +171,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 
 	//我的机甲移动命令
 	if (info.robotInformation[myID].remainingAmmo > 1 || !hasArsenal){
-		if (obstacle_distance > robot_r + 80){
+		if (obstacle_distance > robot_r + 85){
 			if (obstacle_dtheta >= -180 && obstacle_dtheta <= -10){
 				order.eturn = 1;
 			}
@@ -178,7 +179,10 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				order.eturn = -1;
 			}
 		}
-		else order.eturn = -1;
+		else {
+			order.run = 0;
+			order.eturn = -1;
+		}
 	}
 	else if (arsenal_dtheta >= -180 && arsenal_dtheta <= -10){
 		order.eturn = 1;
