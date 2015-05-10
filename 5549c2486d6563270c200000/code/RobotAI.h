@@ -122,7 +122,7 @@ public:
 	virtual int AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
 
 	//如果有子弹威胁到我
-	virtual bool BulletShotMe(Circle bu, Circle me, double vx, double vy);
+	virtual bool BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype);
 
 	//选择一个可以去的军火库
 	virtual Circle whichArsenal(RobotAI_ArsenalInformation ar1, RobotAI_ArsenalInformation ar2, Circle me);
@@ -133,12 +133,12 @@ public:
 	virtual int runAndrunAFV(Circle me,Circle armor,double engine_rotation);
 
 	//确定旋转角方向
-	virtual int howToRotate(Circle me, Circle armor, double weapon_rotation, double vx, double vy);
+	virtual double howToRotate(Circle me, Circle armor, double weapon_rotation, double vx, double vy);
 
 	//旋转函数
 	virtual int Rotate(double angle_to, double angle_now);
 	//何时开炮？有障碍物的时候要节约子弹哦
-	virtual int doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs);
+	virtual int doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle);
 
 	//距离函数Distance
 	virtual double Distance(double x1, double y1, double x2, double y2);
