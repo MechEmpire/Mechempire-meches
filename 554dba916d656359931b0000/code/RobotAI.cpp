@@ -11,11 +11,6 @@ RobotAI::~RobotAI()
 
 }
 
-
-//-----------------------------------------------------
-//1.必须完成的战斗核心
-//-----------------------------------------------------
-
 struct bulletInfo
 {
 	bullettypename bulletType;
@@ -30,15 +25,18 @@ int bulletNum = 0;
 
 int frame = 0;
 
-int myID1 = 0;
+int myID = 0;
 int enemyID = 1;
+
+int myCurrentX = 0;
+int myCurrentY = 0;
 
 double myRotationalSpeed = 0;
 double myWpRotSpeed = 0;
 double myAcceleration = 0;
 const double myRadius = 46;
 
-const int DENSITY_CALCULATE_TIME = 100;
+const int DENSITY_CALCULATE_TIME = 40;
 double* battlefieldDensity;
 double lastForecastX;
 double lastForecastY;
@@ -48,9 +46,9 @@ double lastForecastEngineAngle;
 
 int aiming(const RobotAI_BattlefieldInformation& info, double aimingX, double aimingY)
 {
-	double myX = info.robotInformation[myID1].circle.x;
-	double myY = info.robotInformation[myID1].circle.y;
-	double wpAngle = info.robotInformation[myID1].weaponRotation;
+	double myX = info.robotInformation[myID].circle.x;
+	double myY = info.robotInformation[myID].circle.y;
+	double wpAngle = info.robotInformation[myID].weaponRotation;
 	double aimAngle = RadianToAngle(atan2(aimingY - myY, aimingX - myX));
 	double movAngle = wpAngle - aimAngle;
 	AngleAdjust(movAngle);
@@ -164,7 +162,7 @@ void diskMove(const RobotAI_BattlefieldInformation& info, double &x, double &y, 
 
 void updateBattlefieldDensity(const RobotAI_BattlefieldInformation& info)
 {
-	for (int i = 0; i < DENSITY_CALCULATE_TIME * 1366 * 680; i++)
+	for (int i = 0; i < DENSITY_CALCULATE_TIME * 620 * 620; i++)
 	{
 		(*(battlefieldDensity + i)) = 0;
 	}
@@ -177,9 +175,10 @@ void updateBattlefieldDensity(const RobotAI_BattlefieldInformation& info)
 			{
 				for (int yTest = int(floor((*(bullet + i)).y - myRadius)); yTest < int(ceil((*(bullet + i)).y + myRadius)); yTest++)
 				{
-					if (xTest >= myRadius && xTest <= 1366 - myRadius && yTest >= myRadius && yTest <= 680 - myRadius && pow(xTest - (*(bullet + i)).x, 2) + pow(yTest - (*(bullet + i)).y, 2) <= pow(myRadius + 1, 2))
+					if (xTest >= myRadius && xTest <= 1366 - myRadius && xTest >= myCurrentX - 300 && xTest <= myCurrentX + 300 && yTest >= myRadius && yTest <= 680 - myRadius && 
+						yTest >= myCurrentY - 300 && yTest <= myCurrentY + 300 && pow(xTest - (*(bullet + i)).x, 2) + pow(yTest - (*(bullet + i)).y, 2) <= pow(myRadius + 1, 2))
 					{
-						(*(battlefieldDensity + time * 1366 * 680 + xTest * 680 + yTest)) += 1;
+						(*(battlefieldDensity + time * 620 * 620 + (xTest - myCurrentX + 300) * 620 + (yTest - myCurrentY + 300))) += 1;
 					}
 				}
 			}
@@ -198,11 +197,11 @@ void updateBattlefieldDensity(const RobotAI_BattlefieldInformation& info)
 		{
 			for (int yTest = int(floor(yObs - myRadius - rObs)); yTest < int(ceil(yObs + myRadius + rObs)); yTest++)
 			{
-				if (pow(xTest - xObs, 2) + pow(yTest - yObs, 2) <= pow(myRadius + rObs, 2))
+				if (xTest >= myCurrentX - 300 && xTest <= myCurrentX + 300 && yTest >= myCurrentY - 300 && yTest <= myCurrentY + 300 && pow(xTest - xObs, 2) + pow(yTest - yObs, 2) <= pow(myRadius + rObs, 2))
 				{
 					for (int time = 0; time < DENSITY_CALCULATE_TIME; time++)
 					{
-						(*(battlefieldDensity + time * 1366 * 680 + xTest * 680 + yTest)) += 10000;
+						(*(battlefieldDensity + time * 620 * 620 + (xTest - myCurrentX + 300) * 620 + (yTest - myCurrentY + 300))) += 10000;
 					}
 				}
 			}
@@ -216,11 +215,11 @@ void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 
 	for (int i = 0; i < 1296; i++)
 	{
-		double x = info.robotInformation[myID1].circle.x;
-		double y = info.robotInformation[myID1].circle.y;
-		double vx = info.robotInformation[myID1].vx;
-		double vy = info.robotInformation[myID1].vy;
-		double engineAngle = info.robotInformation[myID1].engineRotation;
+		double x = info.robotInformation[myID].circle.x;
+		double y = info.robotInformation[myID].circle.y;
+		double vx = info.robotInformation[myID].vx;
+		double vy = info.robotInformation[myID].vy;
+		double engineAngle = info.robotInformation[myID].engineRotation;
 
 		for (int time = 0; time < 4; time++)
 		{
@@ -229,7 +228,7 @@ void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 				int ord = int(i / int(pow(6, time))) % 6;
 				diskMove(info, x, y, vx, vy, engineAngle, ord / 2, ord % 3 - 1);
 
-				*(nextTenMove + i) += *(battlefieldDensity + (time * 10 + n) * 1366 * 680 + int(floor(x)) * 680 + int(floor(y)));
+				*(nextTenMove + i) += *(battlefieldDensity + (time * 10 + n) * 620 * 620 + (int(floor(x)) - myCurrentX + 300) * 620 + (int(floor(y)) - myCurrentY + 300));
 			}
 
 		}
@@ -248,37 +247,6 @@ void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 
 	order.run = (leastIndex % 6) / 2;
 	order.eturn = (leastIndex % 6) % 3 - 1;
-	/*
-	double possibleMove[6];
-	for (int ord = 0; ord < 6; ord++)
-	{
-	double normalizedBulletDist = 0;
-	double x = info.robotInformation[myID].circle.x;
-	double y = info.robotInformation[myID].circle.y;
-	double vx = info.robotInformation[myID].vx;
-	double vy = info.robotInformation[myID].vy;
-	double engineAngle = info.robotInformation[myID].engineRotation;
-	diskMove(info, x, y, vx, vy, engineAngle, ord / 2, ord % 3 - 1);
-	for (int i = 0; i < bulletNum; i++)
-	{
-	normalizedBulletDist += pow(pow(x - (*(bullet + i)).x, 2) + pow(y - (*(bullet + i)).y, 2), -4);
-	possibleMove[ord] = normalizedBulletDist;
-	}
-	}
-
-	double bestDist = possibleMove[0];
-	int bestOrd = 0;
-	for (int ord = 1; ord < 6; ord++)
-	{
-	if (possibleMove[ord] < bestDist)
-	{
-	bestOrd = ord;
-	}
-	}
-
-	order.run = bestOrd / 2;
-	order.eturn = bestOrd % 3 - 1;
-	*/
 }
 
 void updatebulletInfo(const RobotAI_BattlefieldInformation& info)
@@ -300,6 +268,8 @@ void updatebulletInfo(const RobotAI_BattlefieldInformation& info)
 void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
 	//printf("%i", frame);
+	myCurrentX = int(floor(info.robotInformation[myID].circle.x));
+	myCurrentY = int(floor(info.robotInformation[myID].circle.y));
 	updatebulletInfo(info);
 	updateBattlefieldDensity(info);
 	diskBestOperation(order, info);
@@ -307,11 +277,11 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	order.fire = 1;
 	frame++;
 
-	lastForecastX = info.robotInformation[myID1].circle.x;
-	lastForecastY = info.robotInformation[myID1].circle.y;
-	lastForecastVX = info.robotInformation[myID1].vx;
-	lastForecastVY = info.robotInformation[myID1].vy;
-	lastForecastEngineAngle = info.robotInformation[myID1].engineRotation;
+	lastForecastX = info.robotInformation[myID].circle.x;
+	lastForecastY = info.robotInformation[myID].circle.y;
+	lastForecastVX = info.robotInformation[myID].vx;
+	lastForecastVY = info.robotInformation[myID].vy;
+	lastForecastEngineAngle = info.robotInformation[myID].engineRotation;
 	diskMove(info, lastForecastX, lastForecastY, lastForecastVX, lastForecastVY, lastForecastEngineAngle, order.run, order.eturn);
 }
 
@@ -358,16 +328,16 @@ int RobotAI::GetEngineBlue()
 	return -50;
 }
 
-void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info, int myID)
+void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info, int myIDPassin)
 {
-	myID1 = myID;
-	enemyID = 1 - myID1;
+	myID = myIDPassin;
+	enemyID = 1 - myID;
 	bullet = new bulletInfo[500];
-	myRotationalSpeed = get_engine_rotationSpeed(info.robotInformation[myID1].engineTypeName);
-	myWpRotSpeed = get_weapon_rotationSpeed(info.robotInformation[myID1].weaponTypeName);
-	myAcceleration = get_engine_acceleration(info.robotInformation[myID1].engineTypeName);
+	myRotationalSpeed = get_engine_rotationSpeed(info.robotInformation[myID].engineTypeName);
+	myWpRotSpeed = get_weapon_rotationSpeed(info.robotInformation[myID].weaponTypeName);
+	myAcceleration = get_engine_acceleration(info.robotInformation[myID].engineTypeName);
 
-	battlefieldDensity = new double[DENSITY_CALCULATE_TIME * 1366 * 680]; // DENSITY_CALCULATE_TIME * 1366 * 680
+	battlefieldDensity = new double[DENSITY_CALCULATE_TIME * 620 * 620]; // DENSITY_CALCULATE_TIME * 1366 * 680
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info, int myID)
