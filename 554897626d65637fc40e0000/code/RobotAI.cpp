@@ -32,7 +32,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	EngineFSM.StateChange(order, info, myID, lastMoment);
 	WeaponFSM.StateChange(order, info, myID, lastMoment);
 	lastMoment = info.robotInformation[myID ^ 1];
-	order.fire = 1;
 }
 
 
@@ -69,7 +68,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "C++";
+	return "C";
 }
 
 string RobotAI::GetAuthor()

@@ -38,7 +38,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	} else {
 		order.eturn = 0;
 	}
-
 	// if(abs(atan((info.robotInformation[1-myID].circle.y-info.robotInformation[myID].circle.y)/(info.robotInformation[1-myID].circle.x-info.robotInformation[myID].circle.x)) * 180 / PI + info.robotInformation[myID].engineRotation - 180) < 5) {
 	// 	order.fire = 1;
 	// } else {

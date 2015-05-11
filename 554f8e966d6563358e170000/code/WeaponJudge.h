@@ -14,8 +14,6 @@ public:
 	void (WeaponControl::*Excute)(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID, const Status& lastMoment);
 	void Wait(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID, const Status& lastMoment);
 	void WT_ElectricSaw_NAIVE(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID, const Status& lastMoment);
-	void WT_Machinegun_NAIVE(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID, const Status& lastMoment);
-
 };
 
 //void WeaponJudge(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID, const Status& lastMoment);

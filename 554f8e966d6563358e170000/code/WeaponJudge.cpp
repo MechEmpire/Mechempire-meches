@@ -1,9 +1,9 @@
 #include "WeaponJudge.h"
-#include "miaozhun.h"
+
 
 void WeaponControl::StateChange(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID, const Status& lastMoment){
 	if (Excute == NULL)
-		Excute = &WeaponControl::WT_Machinegun_NAIVE;
+		Excute = &WeaponControl::WT_ElectricSaw_NAIVE;
 	if (Excute != NULL)
 		(this->*Excute)(order, info, myID, lastMoment);
 }
@@ -44,18 +44,4 @@ void WeaponControl::WT_ElectricSaw_NAIVE(RobotAI_Order& order, const RobotAI_Bat
 	{
 		order.fire = 0;
 	}
-}
-void WeaponControl::WT_Machinegun_NAIVE(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID, const Status& lastMoment)
-{
-	double temp;
-	int tt = info.robotInformation[myID].remainingAmmo;
-	VECTOR p;
-	p = takeAim(order, info, myID);
-	temp = p.y;
-	Beam shootLine;
-	shootLine.x = info.robotInformation[myID].circle.x;
-	shootLine.y = info.robotInformation[myID].circle.y;
-	shootLine.rotation = temp;
-	if (willShoot(info, myID, shootLine, p.x)) order.fire = 1;
-	else order.fire = 0;
 }

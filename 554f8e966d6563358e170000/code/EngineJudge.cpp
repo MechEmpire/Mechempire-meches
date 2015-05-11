@@ -71,13 +71,6 @@ void EngineControl::Tank_Defence_Mode(RobotAI_Order& order, const RobotAI_Battle
 	int maxn, choice=0, cnt = 0;
 	Vector2D FinalChoice;
 	Vector2D myXY = info.robotInformation[myID].circle;
-	if (info.robotInformation[myID].remainingAmmo == 0)
-	{
-		if (info.arsenal[0].respawning_time == 0)
-			lastChoice = info.arsenal[0].circle;
-		if (info.arsenal[1].respawning_time == 0)
-			lastChoice = info.arsenal[1].circle;
-	}
 	if (lastChoice.Distance(info.robotInformation[myID ^ 1].circle) > 2 * info.robotInformation[myID ^ 1].circle.r)
 	{
 		lastChoice.x = -1;

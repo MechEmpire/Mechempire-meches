@@ -17,7 +17,7 @@ void getSpeed(const RobotAI_BattlefieldInformation& info,int myID,double& bullet
     case WT_Prism:           bulletSpeed=1000; break;
 	case WT_Tesla:           bulletSpeed=1000; break;
 	case WT_PlasmaTorch:     bulletSpeed=5;    break;
-	case WT_MissileLauncher: bulletSpeed=1000;    break;
+	case WT_MissileLauncher: bulletSpeed=4;    break;
 	case WT_ElectricSaw:     bulletSpeed=1000; break;
 	default:break;
 	}

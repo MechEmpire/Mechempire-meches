@@ -115,13 +115,13 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "啦啦啦小凯";
+	return "装逼程序已启动";
 }
 
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "凯子歌打炮";
+	return "啦啦啦小凯";
 }
 
 
@@ -352,7 +352,7 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 		v1Angle = atan2(vy, vx) * 180 / PI;
 		double ABC_angle = 180 - v1Angle + angle;//辅助角CBD
 		double d_AC = sqrt(d*d + r*r - 2*d*r*cos(ABC_angle / 180 * PI));//三角形的AC边
-		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * 0.75;//0.75是修正因子
+		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * 0.65;//0.75是修正因子
 		//fout<<d<<"  "<<r<<"   "<<v1Angle<<"   "<<angle<<"   "<<ABC_angle<<"   "<<offset<<endl;		
 		//加上偏移角
 		if(angle > 0 && angle < 180){

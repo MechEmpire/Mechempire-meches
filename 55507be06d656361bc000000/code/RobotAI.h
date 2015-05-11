@@ -1,22 +1,50 @@
 #pragma once
 
 #include "RobotAI_Interface.h"
-#include "Global.h"
-#include "EngineJudge.h"
-#include "WeaponJudge.h"
+#include<cmath>
+const int length = 1366;
+const int width = 680;
+/*
+struct bulletRecorded
+{
+	int entityID;
+
+
+	//temp
+	bullettypename type;		//子弹类型,属性数据查表获得
+
+	Circle circle;		//bullet的圆(x,y,radium)
+	double rotation;	//引擎角度
+	double vx, vy, vr;
+	double lastx, lasty;
+	bulletRecorded()
+	{
+		lastx = 0; lasty = 0;
+	}
+	bulletRecorded(RobotAI_BulletInformation& in)
+	{
+		entityID = in.entityID;
+		type = in.type;
+		circle = in.circle;
+		rotation = in.rotation;
+		vx = in.vx;
+		vy = in.vy;
+		vr = in.vr;
+		lastx = 0; lasty = 0;
+	}
+};*/
 
 class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
-	Status lastMoment;
-	//EngineControl EngineFSM;
-	
+	int matrix[length][width];
+	bool start;
 public:
 
 	//************************************************
 	//这一段函数声明别乱动啊，否则机甲抛锚了别怪我
-	
+
 	RobotAI();
 	virtual ~RobotAI();
 
@@ -118,11 +146,12 @@ public:
 
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
-
-
-
-
-
+	private:
+		void detectBullet(const RobotAI_BattlefieldInformation& info, int myID);
+		int check(int xUp,int yUp,int xDown,int yDown);
+	//	map<int, bulletRecorded> Bullets;//used to record them
+		void goal(const RobotAI_BattlefieldInformation& info,int myID);
+		int previewNum;
 
 
 };
