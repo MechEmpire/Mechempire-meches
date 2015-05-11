@@ -11,13 +11,13 @@ void getSpeed(const RobotAI_BattlefieldInformation& info,int myID,double& bullet
 {
 	switch (info.robotInformation[myID].weaponTypeName){
 	case WT_Cannon:          bulletSpeed=8;    break;
-	case WT_Shotgun:         bulletSpeed=7.5;  break;
+	case WT_Shotgun:         bulletSpeed=10;  break;
 	case WT_RPG:             bulletSpeed=6;    break;
-	case WT_Machinegun:      bulletSpeed=10;   break;
+	case WT_Machinegun:      bulletSpeed=11;   break;
     case WT_Prism:           bulletSpeed=1000; break;
 	case WT_Tesla:           bulletSpeed=1000; break;
 	case WT_PlasmaTorch:     bulletSpeed=5;    break;
-	case WT_MissileLauncher: bulletSpeed=4;    break;
+	case WT_MissileLauncher: bulletSpeed=1000;    break;
 	case WT_ElectricSaw:     bulletSpeed=1000; break;
 	default:break;
 	}

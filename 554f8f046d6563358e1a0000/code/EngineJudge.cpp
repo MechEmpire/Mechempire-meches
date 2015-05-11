@@ -7,11 +7,15 @@ void EngineControl::GenerateCondidateChoice(const RobotAI_BattlefieldInformation
 	
 	for (int i = 0; i < NODESIZE; i++)
 	{
-		//candidateChoice[i].x = rand() % (1366 - (int)info.robotInformation[myID].circle.r * 3) + info.robotInformation[myID].circle.r*1.5;
-		//candidateChoice[i].y = rand() % (680 - (int)info.robotInformation[myID].circle.r * 3) + info.robotInformation[myID].circle.r*1.5;
-		candidateChoice[i].x = rand() % ((int)info.robotInformation[myID ^ 1].circle.r * 4) + info.robotInformation[myID ^ 1].circle.x - 2*info.robotInformation[myID ^ 1].circle.r;
-		candidateChoice[i].y = rand() % ((int)info.robotInformation[myID ^ 1].circle.r * 4) + info.robotInformation[myID ^ 1].circle.y - 2*info.robotInformation[myID ^ 1].circle.r;
+		candidateChoice[i].x = rand() % (1366 - (int)info.robotInformation[myID].circle.r * 3) + info.robotInformation[myID].circle.r*1.5;
+		candidateChoice[i].y = rand() % (680 - (int)info.robotInformation[myID].circle.r * 3) + info.robotInformation[myID].circle.r*1.5;
+		//candidateChoice[i].x = rand() % ((int)info.robotInformation[myID ^ 1].circle.r * 10) + info.robotInformation[myID ^ 1].circle.x - 5*info.robotInformation[myID ^ 1].circle.r;
+		//candidateChoice[i].y = rand() % ((int)info.robotInformation[myID ^ 1].circle.r * 10) + info.robotInformation[myID ^ 1].circle.y - 5*info.robotInformation[myID ^ 1].circle.r;
 		/*Vector2D temp_v[2];
+		temp_v[0].x = info.boundary.x;
+		temp_v[0].y = info.boundary.y;
+		temp_v[1].x = info.boundary.x;
+		temp_v[1].y = info.boundary.y;
 		Vector2D myXY = info.robotInformation[myID].circle;
 		Beam b;
 		b.x = myXY.x;
@@ -73,10 +77,12 @@ void EngineControl::Tank_Defence_Mode(RobotAI_Order& order, const RobotAI_Battle
 	Vector2D myXY = info.robotInformation[myID].circle;
 	if (info.robotInformation[myID].remainingAmmo == 0)
 	{
+		int i=0;
 		if (info.arsenal[0].respawning_time == 0)
-			lastChoice = info.arsenal[0].circle;
+			candidateChoice[i++] = info.arsenal[0].circle;
 		if (info.arsenal[1].respawning_time == 0)
-			lastChoice = info.arsenal[1].circle;
+			candidateChoice[i++] = info.arsenal[1].circle;
+
 	}
 	if (lastChoice.Distance(info.robotInformation[myID ^ 1].circle) > 2 * info.robotInformation[myID ^ 1].circle.r)
 	{
@@ -171,22 +177,30 @@ void EngineControl::Tank_Defence_Mode(RobotAI_Order& order, const RobotAI_Battle
 	}
 	//cout << info.robotInformation[myID^1].circle.x << " " << info.robotInformation[myID^1].circle.y << endl;
 	//cout << FinalChoice << endl;
-	if (myXY.Distance(info.robotInformation[myID ^ 1].circle) <= 5 * info.robotInformation[myID ^ 1].circle.r)
+	//if (myXY.Distance(info.robotInformation[myID ^ 1].circle) <= 5 * info.robotInformation[myID ^ 1].circle.r)
 	//cout << myXY.Distance(info.robotInformation[myID ^ 1].circle)<<endl;;
-		FinalChoice = info.robotInformation[myID ^ 1].circle;
 	//cout << FinalChoice << endl;
-	Vector2D Vxy;
-	Vxy.x = info.robotInformation[myID].vx;
-	Vxy.y = info.robotInformation[myID].vy;
-	double angleT = RadianToAngle(Vxy.ATAN2());
+	double angleT = info.robotInformation[myID].engineRotation;
 	double angleC = RadianToAngle((FinalChoice - myXY).ATAN2());
-	if (angleT - angleC>180)
+	double dt = angleC - angleT;
+	AngleAdjust(dt);
+	if (dt > EPS){
+		order.eturn = 1;
+	}
+	else if (dt < -EPS){
+		order.eturn = -1;
+	}
+	else {
+		order.eturn = 0;
+
+	}
+	/*if (angleT - angleC>180)
 		order.eturn = 1;
 	if (angleC - angleT>180)
 		order.eturn = -1;
 	if (angleC - angleT>0 && angleC - angleT<180)
 		order.eturn = 1;
 	if (angleT-angleC>0&&angleT-angleC<180)
-		order.eturn = -1;
+		order.eturn = -1;*/
 	order.run = 1;
 }

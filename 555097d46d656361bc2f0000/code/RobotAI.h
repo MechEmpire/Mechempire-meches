@@ -1,24 +1,22 @@
 #pragma once
 
 #include "RobotAI_Interface.h"
-double tAngle(double angle1, double angle2);
-double getAngle(Circle a, Circle b);
-int turnfire(double radfire, double radother, double radins, bool&state);
-void controlfire(Circle mypoint, Circle otherpoint, double radfire, int&fire, int&wturn);
-
-
+#include "Global.h"
+#include "EngineJudge.h"
+#include "WeaponJudge.h"
 
 class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
-
-
+	Status lastMoment;
+	//EngineControl EngineFSM;
+	
 public:
 
 	//************************************************
 	//这一段函数声明别乱动啊，否则机甲抛锚了别怪我
-
+	
 	RobotAI();
 	virtual ~RobotAI();
 
@@ -120,12 +118,11 @@ public:
 
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
-	
+
+
 
 
 
 
 
 };
-
-

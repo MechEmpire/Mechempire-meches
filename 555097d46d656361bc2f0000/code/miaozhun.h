@@ -13,7 +13,7 @@ void getSpeed(const RobotAI_BattlefieldInformation& info,int myID,double& bullet
 	case WT_Cannon:          bulletSpeed=8;    break;
 	case WT_Shotgun:         bulletSpeed=10;  break;
 	case WT_RPG:             bulletSpeed=6;    break;
-	case WT_Machinegun:      bulletSpeed=10;   break;
+	case WT_Machinegun:      bulletSpeed=11;   break;
     case WT_Prism:           bulletSpeed=1000; break;
 	case WT_Tesla:           bulletSpeed=1000; break;
 	case WT_PlasmaTorch:     bulletSpeed=5;    break;
@@ -182,7 +182,7 @@ double dist(const Point&a, const Point& b)
 
 bool willShoot(const RobotAI_BattlefieldInformation& info, int myID, Beam shootLine, double time)
 {
-	int MMAX = 20000;
+	int MMAX = 200000;
 	Point p1, p2, p3;
 	double d1, d2, d3;
 	Point myPoint, special, ENERNMYPOINT;

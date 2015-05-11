@@ -177,7 +177,8 @@ void EngineControl::Tank_Defence_Mode(RobotAI_Order& order, const RobotAI_Battle
 	}
 	//cout << info.robotInformation[myID^1].circle.x << " " << info.robotInformation[myID^1].circle.y << endl;
 	//cout << FinalChoice << endl;
-	//if (myXY.Distance(info.robotInformation[myID ^ 1].circle) <= 5 * info.robotInformation[myID ^ 1].circle.r)
+	if (myXY.Distance(info.robotInformation[myID ^ 1].circle) <= 4 * info.robotInformation[myID ^ 1].circle.r)
+		FinalChoice = info.robotInformation[myID ^ 1].circle;
 	//cout << myXY.Distance(info.robotInformation[myID ^ 1].circle)<<endl;;
 	//cout << FinalChoice << endl;
 	double angleT = info.robotInformation[myID].engineRotation;

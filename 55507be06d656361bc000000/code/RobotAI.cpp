@@ -292,7 +292,7 @@ void RobotAI::goal(const RobotAI_BattlefieldInformation& info,int myID)
 	int yGoal = info.arsenal[0].circle.y;
 	int xNow = info.robotInformation[myID].circle.x;
 	int yNow = info.robotInformation[myID].circle.y;
-	if (info.arsenal[0].respawning_time > 10)
+	if (info.arsenal[0].respawning_time > 10 || (abs(info.robotInformation[(myID + 1) % 2].circle.x - xGoal) + abs(info.robotInformation[(myID + 1) % 2].circle.y-yGoal)<50))
 	{
 		xGoal = info.arsenal[1].circle.x;
 		yGoal = info.arsenal[1].circle.y;
@@ -301,7 +301,7 @@ void RobotAI::goal(const RobotAI_BattlefieldInformation& info,int myID)
 	{
 		if (info.robotInformation[myID].cooling <= 0)
 		{
-		//	cout << "Attack" << " ";
+			cout << "Attack" << " ";
 			int xO = info.robotInformation[(myID + 1) % 2].circle.x;
 			int yO = info.robotInformation[(myID + 1) % 2].circle.y;
 			double k1 = (yO - yNow) / (double)(xO - xNow);
@@ -330,11 +330,63 @@ void RobotAI::goal(const RobotAI_BattlefieldInformation& info,int myID)
 					xGoal = xNow; yGoal = width - 50;
 				}
 			}
+			cout << xGoal << " " << yGoal << " ";
 		}
 		else
 		{
-			//cout << "defend" << " ";
-			xGoal = xNow; yGoal = yNow;
+			cout << "defend" << " ";
+			int obstacleX1 = 300, obstacleY1 = 250;
+			int obstacleX2 = 1066, obstacleY2 = 430;
+			int move1,move2;
+			int x1, y1, x2, y2;
+			int xO = info.robotInformation[(myID + 1) % 2].circle.x;
+			int yO = info.robotInformation[(myID + 1) % 2].circle.y;
+			double kt = (yO - obstacleY1) / (double)(xO - obstacleX1);
+			double bt = yO - kt*xO;
+			//doesn't consider the time when they are in a vertical line! could be improved later
+			//doesn't consider what if the way is cut down by the obstacle,either
+			if (abs(xO - xNow) < abs(xNow - obstacleX1))
+			{
+				y1 = yNow; x1 = (y1 - bt) / kt;
+				move1 = abs(x1 - xNow);
+				if (x1>=length)
+					move1 = 10000;
+			}
+			else
+			{
+				x1 = xNow; y1 = kt*x1 + bt;
+				move1 = abs(y1 - yNow);
+				if (y1 >= width)
+					move1 = 10000;
+			}
+			kt = (yO - obstacleY2) / (double)(xO - obstacleX2);
+			bt = yO - kt*xO;
+			if (abs(xO - xNow) < abs(xNow - obstacleX2))
+			{
+				y2 = yNow; x2 = (y2 - bt) / kt;
+
+				move2 = abs(x2 - xNow);
+				if (x2 >= length)
+					move2 = 10000;
+			}
+			else
+			{
+				x2 = xNow; y2 = kt*x2 + bt;
+				move2 = abs(y2 - yNow);
+				if (y2 >= width)
+					move2 = 10000;
+			}
+			if (move1<move2)
+			{
+				xGoal = x1; yGoal = y1;
+				cout << "move1 " << move1 << " ";
+			}
+			else
+			{
+				xGoal = x2; yGoal = y2;
+		//		cout << "move2" << move2 << " ";
+			}
+		//	cout << xGoal << " " << yGoal << " ";
 		}
 	}
 
@@ -356,12 +408,15 @@ void RobotAI::goal(const RobotAI_BattlefieldInformation& info,int myID)
 				if (y < 0) y = 0;
 				if (x >= length) x = length - 1;
 				if (y >= width) y = width - 1;
-				//cout << x << " " << y << endl;
+			//	cout << x << " " << y << endl;
 				matrix[x][y] = 20;
 			}
 			else
 			{
-				matrix[xNow][yNow + i] = 20;
+				if (yGoal>yNow)
+					matrix[xNow][yNow + i] = 20;
+				else
+					matrix[xNow][yNow - i] = 20;
 			}
 		}
 	
@@ -426,13 +481,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 //	cout << checkRec[4] << " "<<endl;
 //	cout << endl;
 	if (xNow == 50)
-		checkRec[1] -= 15;
+		checkRec[1] -= checkRec[2];
 	if (xNow >= length - 55)
-		checkRec[2] -= 15;
+		checkRec[2] -= checkRec[1];
 	if (yNow <= 55)
-		checkRec[3] -= 15;
+		checkRec[3] -= checkRec[4];
 	if (yNow >= width - 55)
-		checkRec[4] -= 15;
+		checkRec[4] -= checkRec[3];
 	int Ma = Min, rec = 0;
 	for (int i = 1; i <= 4; i++)
 	if (checkRec[i] > Ma)
@@ -548,8 +603,35 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 	start = true;
 	for (int i = 0; i < length;i++)
 	for (int j = 0; j < width; j++)
+	{
 		matrix[i][j] = 0;
-	previewNum= 50;
+	}
+	int t = 0;
+	switch (info.robotInformation[(myID + 1) % 2].weaponTypeName)
+	{
+	case WT_Cannon:
+		t = 11;
+		break;
+	case WT_Shotgun:
+		t = 10; break;
+	case WT_RPG:
+		t = 9; break;
+	case WT_Machinegun:
+		t = 11; break;
+	case WT_PlasmaTorch:
+		t = 5; break;
+	case WT_MissileLauncher:
+		t = 5; break;
+	case WT_GrenadeThrower:
+		t = 6; break;
+	case WT_MineLayer:
+		t = 5; break;
+	case WT_Apollo:
+		t = 14; break;
+	default:
+		t = 5; break;
+	}
+	previewNum = 10 * t;
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID)
@@ -557,7 +639,7 @@ void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID)
 	//一场战斗结束时被调用，可能可以用来析构你动态分配的内存空间（如果你用了的话）
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
-	//system("pause");
+	system("pause");
 }
 
 
