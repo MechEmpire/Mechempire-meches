@@ -47,9 +47,11 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//杀向敌人！
 	order.run = 1;
 	order.eturn =  runAndrunAFV(me.circle, armor.circle, me.engineRotation);
+	if(avoidObstacleAFV(me.circle, obs, info.num_obstacle))//遇到障碍物？
+		order.eturn = -1;
 	double distance_me_armor = Distance(me.circle.x, me.circle.y, armor.circle.x, armor.circle.y);
 	if(armor.weaponTypeName != WT_MissileLauncher && armor.engineTypeName != ET_Shuttle){//打猥琐飞弹和太空要塞只需贴脸！
-		if(distance_me_armor <= 250)//太近了就往回走
+		if(distance_me_armor <= 400)//太近了就往回走
 		order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
 	}
 	
@@ -250,31 +252,37 @@ int RobotAI::runAndrunAFV(Circle me,Circle armor,double engine_rotation)
 	return Rotate(an,engine_rotation);
 	
 }
+//躲避障碍物
+bool RobotAI::avoidObstacleAFV(Circle me, Circle obstacle[],const int num_obs)
+{
+	double *dist = new double[num_obs];
+	for(int i = 0; i < num_obs; i++)
+	{
+		dist[i] = Distance(me.x, me.y, obstacle[i].x, obstacle[i].y);
+		if(dist[i]<=145)
+		{
+			delete dist;
+			return true;
+		}
+	}
+	delete dist;
+	return false;
+}
 //如果有子弹靠近我
 bool RobotAI::BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype)
 {
-	int min_dis = 250;
+	int min_dis = 350;
 	if(weapontype == WT_Apollo || weapontype == WT_RPG)
-		min_dis = 350;
-	if(Distance(bu.x, bu.y, me.x, me.y) < min_dis)
-	{
-		/*
-		//打向我的角度
-		double bulletAngle = atan2(vy,vx) * 180 / PI;
-		//我与子弹的角度
-		double angle = atan2(me.y - bu.y, me.x - bu.x) * 180 / PI;
-		int poor = bulletAngle - angle;
-		if(poor > 180){
-			poor = 360 - poor;
-		}else if(poor < -180)
-		{
-			poor += 360;
-		}
-		//24.3°是0.45的反正切值，即有可能打到我的角度差值
-		if(abs(poor) < 30)
-		*/
-		return true;		
-	}
+		min_dis = 450;
+	//Distance(bu.x, bu.y, me.x, me.y)
+	//打向我的角度
+	double bulletAngle = atan2(vy,vx) * 180 / PI;
+	//我与子弹的角度
+	double A = vy / vx;
+	double C = bu.y - A * bu.x;
+	double dist = abs(A * me.x - me.y + C) / sqrt(A*A + 1);
+	if(dist <= 50 && Distance(bu.x, bu.y, me.x, me.y) <= min_dis)
+		return true;	
 	return false;
 }
 //小蜘蛛躲子弹
@@ -300,9 +308,32 @@ int RobotAI::AvoidBullet(Circle bu, double vx, double vy, Circle myself)
 int RobotAI::AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me)
 {
 	double bu_angle = atan2(bu.vy, bu.vx) * 180 / PI;
-	bu_angle += 90;
-	if(bu_angle > 180) bu_angle = 360 - bu_angle;
-	return Rotate(bu_angle,me.engineRotation);	
+	//double angle = atan2(me.circle.y - bu.circle.y, me.circle.x - bu.circle.x) *180/PI;
+	if(me.circle.x >341 && me.circle.x < 1025)
+	{
+		if(me.circle.y <= 340)
+			bu_angle = 90;
+		else
+			bu_angle = -90;
+	}else{
+		if(me.circle.x <= 341)
+			bu_angle = 0;
+		else
+			bu_angle = 180;
+	}
+
+	/*//遇到墙则反弹
+	if(680 - me.circle.y <= 5)
+	{
+		bu_angle = -90;
+	}else if(me.circle.y <= 5){
+		bu_angle = 90;
+	}else if(me.circle.x <= 5){
+		bu_angle = 0;
+	}else if(1366 - me.circle.x <= 5)
+		bu_angle = 180;
+	*/
+	return Rotate(bu_angle, me.engineRotation);	
 }
 
 //确定旋转角方向,旋转机枪Mashinegun射速11,返回应该旋转的角度
@@ -321,9 +352,8 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 		v1Angle = atan2(vy, vx) * 180 / PI;
 		double ABC_angle = 180 - v1Angle + angle;//辅助角CBD
 		double d_AC = sqrt(d*d + r*r - 2*d*r*cos(ABC_angle / 180 * PI));//三角形的AC边
-		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI;
-		fout<<d<<"  "<<r<<"   "<<v1Angle<<"   "<<angle<<"   "<<ABC_angle<<"   "<<offset<<endl;
-		//offset = acos(1 - v1 * v1 / (2 * v2 * v2)) * 180 / PI ;		
+		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * 0.75;//0.75是修正因子
+		//fout<<d<<"  "<<r<<"   "<<v1Angle<<"   "<<angle<<"   "<<ABC_angle<<"   "<<offset<<endl;		
 		//加上偏移角
 		if(angle > 0 && angle < 180){
 			if(angle - 180 < v1Angle && v1Angle < angle)
@@ -364,7 +394,7 @@ int RobotAI::doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,doubl
 	double distWithAr = Distance(me.x, me.y, armor.x, armor.y), //与敌人的距离
 		distWithObs1 = Distance(me.x, me.y, obstacle[0].x, obstacle[0].y),
 		distWithObs2 = Distance(me.x, me.y, obstacle[1].x, obstacle[1].y),distWithObs;
-	if(distWithAr >= 600)//距离太远就不打！
+	if(distWithAr >= 900)//距离太远就不打！
 		return 0;
 	if(distWithObs1 < distWithObs2)
 	{

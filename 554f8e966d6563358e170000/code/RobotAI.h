@@ -3,12 +3,19 @@
 #include "RobotAI_Interface.h"
 
 
-
 class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
-
+	double xGoal;
+	double yGoal;
+	bool arrived;
+	int x[136];
+	int y[68];
+	bool emergency;
+	double xTrack[500];
+	double yTrack[500];
+	int times;
 
 public:
 
@@ -116,34 +123,12 @@ public:
 
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
-	//针对蜘蛛坦克V3，躲避子弹用
-	virtual int AvoidBullet(Circle bu, double vx, double vy, Circle myself);
-	//针对战锤坦克，躲避子弹用
-	virtual int AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
+	void headTo(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+	double getAngle(int myID, const RobotAI_BattlefieldInformation& info);
 
-	//如果有子弹威胁到我
-	virtual bool BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype);
 
-	//选择一个可以去的军火库
-	virtual Circle whichArsenal(RobotAI_ArsenalInformation ar1, RobotAI_ArsenalInformation ar2, Circle me);
 
-	//向敌人进攻！小蜘蛛
-	virtual int runAndrun(Circle me,Circle armor,Circle obstacle[], int num_obs);
-	//向敌人进攻！幽浮
-	virtual int runAndrunAFV(Circle me,Circle armor,double engine_rotation);
-	//遇到障碍物
-	virtual bool avoidObstacleAFV(Circle me, Circle obstacle[],const int num_obs);
 
-	//确定旋转角方向
-	virtual double howToRotate(Circle me, Circle armor, double weapon_rotation, double vx, double vy);
-
-	//旋转函数
-	virtual int Rotate(double angle_to, double angle_now);
-	//何时开炮？有障碍物的时候要节约子弹哦
-	virtual int doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle);
-
-	//距离函数Distance
-	virtual double Distance(double x1, double y1, double x2, double y2);
 
 
 };
