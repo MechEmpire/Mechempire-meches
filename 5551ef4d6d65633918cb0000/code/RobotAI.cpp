@@ -1,119 +1,4 @@
 ﻿#include "RobotAI.h"
-#include<iostream>
-#define Rleft (order.run =1)
-#define Rright (order.run =2)
-#define Rup (order.run =3)
-#define Rdown (order.run =4)
-
-double tAngle(double angle1, double angle2)
-{
-	double a;
-	a = abs(angle1 - angle2);
-	if (a > 180)
-		a = 360 - a;
-	
-	return a;
-}
-
-double getAngle(Circle a, Circle b)
-{
-	Circle A;
-	A.x = b.x - a.x;
-	A.y = b.y - a.y;
-	A.r = atan(A.y / A.x) * 180 / PI;
-	double a1;
-	a1 = A.r + 180;
-	if (A.x < 0)
-		A.r = AngleAdjust(a1);
-	return A.r;
-}
-
-int turnfire(double radfire, double radother, double radins, bool&state)
-{
-
-	double rad1, rad2;
-	double a;
-	double a2;
-	int a1[2] = { 0 };
-	a = radother + radins;
-	rad1 = AngleAdjust(a);
-	a = radother - radins;
-	rad2 = AngleAdjust(a);
-	//cout << rad1 << '\t' << rad2 << '\n';
-	a = abs(rad1 - rad2);
-	if (a <= 180)
-	{
-		a1[0] = 1;
-	}
-
-	if (rad1 > rad2)
-		a2 = rad2;
-	else
-		a2 = rad1;
-	if (radfire < a2 + a && radfire > a2)
-		a1[1] = 1;
-	if (a1[1] == a1[0])
-	{
-		state = 1;
-		return 0;
-	}
-	if (state == 0)
-	{	
-		a = radother + 1;
-		if (tAngle(radother, radfire) > tAngle(AngleAdjust(a), radfire))
-			return -1;
-		else
-			return  1;
-	}
-}
-
-void controlfire(Circle mypoint, Circle otherpoint, double radfire, int&fire, int&wturn)
-{
-	fire = 0;
-	bool state = 0;
-	bool state1 = 1;//未有障碍物
-	Circle A;
-	A.x = otherpoint.x - mypoint.x;
-	A.y = otherpoint.y - mypoint.y;
-	A.r = sqrt(A.x*A.x + A.y*A.y);
-	double  ins;
-	ins = (otherpoint.r - A.r*0.04366) / (otherpoint.y*0.04366 + A.r);
-	double radins = atan(ins) * 180 / PI;
-	radins -= radins*A.r / 1450;
-	double radother = getAngle(mypoint, otherpoint);
-	wturn = turnfire(radfire, radother, radins, state);
-	if (state == 1)
-	{
-		//A.r*sin(asin(77 / A.r) + 2.5)
-		bool aa = 0;
-		Circle b[2] = { 300, 250, 80 + A.r / 1400 * 10, 1066, 430, 80+A.r / 1400 * 10 };
-		double rad3, rad4;
-		rad3 = getAngle(mypoint, b[0]);
-		rad4 = getAngle(mypoint, b[1]);
-		Beam line = { 0 };
-		line.x = mypoint.x;
-		line.y = mypoint.y;
-		line.rotation = radfire;
-		if (HitTestBeamCircle(line, b[0]) == true && A.r>sqrt((mypoint.x - b[0].x)*(mypoint.x - b[0].x) + (mypoint.y - b[0].y)*(mypoint.y - b[0].y)))
-		{
-			state1 = 0;
-			wturn = -turnfire(radfire, rad3, 0, aa);
-		}
-		if (HitTestBeamCircle(line, b[1]) == true && A.r>sqrt((mypoint.x - b[1].x)*(mypoint.x - b[1].x) + (mypoint.y - b[1].y)*(mypoint.y - b[1].y)))
-		{
-			state1 = 0;
-			wturn = -turnfire(radfire, rad4, 0, aa);
-		}
-	}
-	if (state == 1 && state1 == 1)
-		fire = 1;
-
-	}
-
-
-
-
-
 
 RobotAI::RobotAI()
 {
@@ -134,6 +19,25 @@ RobotAI::~RobotAI()
 
 void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID)
 {
+	if(info.robotInformation[myID].weaponRotation!=0) {
+		order.wturn=1;
+	}
+	order.fire=1;
+	    if(info.robotInformation[myID].engineRotation!=90&&info.robotInformation[myID].remainingAmmo==0){
+		 order.eturn=1;
+	}
+	if(info.robotInformation[myID].engineRotation==90&&info.robotInformation[myID].remainingAmmo==0){
+		 order.run=1;
+	}
+    if(info.robotInformation[myID].circle.y>=info.arsenal[0].circle.y) {
+		order.eturn=-1;
+	    if(info.robotInformation[myID].engineRotation==0&&info.robotInformation[myID].remainingAmmo!=0){
+		    order.run=1;
+		}
+		if(info.robotInformation[myID].weaponRotation!=-90){
+			order.wturn=1;
+		}
+	}
 	//帧操纵函数
 	//功能：在每一帧被调用，完成你的机甲在这一帧的动作决策
 	//参数：order	...	机甲操纵指令，你在函数体中给它赋值以操纵机甲在这一帧的行为
@@ -141,47 +45,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
 
-	double radfire = info.robotInformation[myID].weaponRotation;
-	Circle mypoint = info.robotInformation[myID].circle;
-	Circle otherpoint = info.robotInformation[1 - myID].circle;
-	controlfire(mypoint, otherpoint, radfire, order.fire, order.wturn);
-	//cout << radfire << '\n';
-	//system("pause");
-	int stape = 0;
-	static int st = 0;
-	++st;
-	
-	if (st>70&&st<330)
-		order.run = 1;
-	if ((st-330)%50<25)
-		order.run = 1;
-	else
-		order.run = -1;
-	/*if (myID == 1)
-	{
-		
-		if (st <= 45)
-			order.eturn = 1;
-		if ((st - 45) % 870 > 680)
-		{
-			order.eturn = 1;
-		}
-		if (st<200&&st>300)
-			order.run = 1;
-	}
-	if (myID == 0)
-	{
-		if (st <= 45)
-			order.eturn = 1;
-		if ((st - 45) % 770 > 680)
-		{
-			order.eturn = 1;
-		}
-		if (st<200 && st>300)
-			order.run = 1;
-	}*/
-	
-		
 }
 
 
@@ -196,8 +59,8 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_Prism;	//啊，我爱
-	engine = ET_Shuttle;	//啊，我爱蜘蛛
+	weapon = WT_Machinegun;	//啊，我爱加农炮
+	engine = ET_XCraft;	//啊，我爱小蜘蛛
 }
 
 
@@ -218,13 +81,13 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "登革热";
+	return "X战机";
 }
 
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "菜刀队";
+	return "ABC";
 }
 
 
@@ -235,17 +98,17 @@ string RobotAI::GetAuthor()
 int RobotAI::GetWeaponRed()
 {
 	//返回一个-255-255之间的整数,代表武器红色的偏移值
-	return -179;
+	return 200;
 }
 int RobotAI::GetWeaponGreen()
 {
 	//返回一个-255-255之间的整数,代表武器绿色的偏移值
-	return 10;
+	return -50;
 }
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return 209;
+	return -100;
 }
 
 
@@ -255,17 +118,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return 32;
+	return -100;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return 231;
+	return 200;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return 220;
+	return -50;
 }
 
 

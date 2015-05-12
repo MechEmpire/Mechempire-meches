@@ -24,19 +24,32 @@ int roundObstacleDirection = 1;
 int readyToTurnAround = 0;
 int isAvoidingBullet = 0;
 int startAvoidBullet = 0;
+int forceAvoidBullet = 0;//是否准备预判躲避
+int forceAvoidBulletTimeCount = 1;
+
 int MyId;
 int avoidTime = 1;
 int avoidDirection = 0;
+int avoidTimeCount = 0;//躲避次数计算
+int avoidOffset = 35;//躲避偏移量默认30
+int enemyFiredBulletAccount = 0;//敌人已发子弹计数
+int forceAvoidBulletWaitTime = 0;//强制位移等待的时间（因武器的射速有所区别）
+double newBulletRotation = 0.0;//最新子弹的角度
+double weaponAmmo = 0.0;//武器攻击速度
 double myEngineRotation;
 EnemyMovePlan enemyMovePlan = Straight_Line;
 vector<Circle> enemyMoveRecord;
-
+weapontypename enemyWeaponTypeName;
+//开关
+int checkBullet = 0;
+int startToFight = 0;
+int startForceAvoidBullet = 0;
 //函数声明
 EnemyMovePlan judgeStraghtLine();
 bool engineFace(int direction);
 bool existObstacle(Circle myCircle, Circle enemyCircle);
 bool canHitEngine(Circle engineCircle, RobotAI_BulletInformation info, double offset);
-
+double angleDiff(double myRotation, double enemyRotation);
 
 RobotAI::RobotAI()
 {
@@ -72,30 +85,11 @@ void outputMessage(string m)
 	}
 }
 
-void killDi(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+//功能函数
+//计算两点距离
+double calDistance(Circle & c1, Circle & c2)
 {
-	//获取战场信息===================================================
-	RobotAI_RobotInformation enemyInformation;
-	RobotAI_RobotInformation myInformation;
-	if (myID == 0)
-	{
-		enemyInformation = info.robotInformation[1];
-		myInformation = info.robotInformation[0];
-	}
-	else
-	{
-		enemyInformation = info.robotInformation[0];
-		myInformation = info.robotInformation[1];
-	}
-	Circle enemyCircle = enemyInformation.circle;
-	Circle myCircle = myInformation.circle;
-
-	Box boundary = info.boundary;
-
-	//===============================================================
-
-	//武器控制
-
+	return sqrt(pow(c1.x - c2.x, 2.0) + pow(c1.y - c2.y, 2.0));
 }
 //=======================是否进入电锯范围函数=============================
 bool inTheSawAttackRange(Circle & circle1, Circle & circle2,double offset)
@@ -493,7 +487,7 @@ string existObstacle(Circle myCircle, Circle enemyCircle, const Circle *  obstac
 //=================================获取躲避子弹方向==============================
 int getAvoidBulletDirection(Circle myCircle,const Circle * obstacles,double offset)
 {
-	if (myCircle.y <= (50 + offset))
+	if (myCircle.y <= (200 + offset))
 	{
 		cout << "靠近顶部" << endl;
 		if (engineFace(14))
@@ -501,7 +495,7 @@ int getAvoidBulletDirection(Circle myCircle,const Circle * obstacles,double offs
 		else
 			return -1;
 	}
-	else if (myCircle.y >= (630 - offset))
+	else if (myCircle.y >= (380 - offset))
 	{
 		cout << "靠近底部" << endl;
 		if (engineFace(14))
@@ -509,7 +503,7 @@ int getAvoidBulletDirection(Circle myCircle,const Circle * obstacles,double offs
 		else
 			return 1;
 	}
-	else if (myCircle.x <= (50 + offset))
+	else if (myCircle.x <= (250 + offset))
 	{
 		cout << "靠近左边" << endl;
 		if (engineFace(12))
@@ -517,7 +511,7 @@ int getAvoidBulletDirection(Circle myCircle,const Circle * obstacles,double offs
 		else
 			return -1;
 	}
-	else if (myCircle.x >= (1316 - offset))
+	else if (myCircle.x >= (1250 - offset))
 	{
 		cout << "靠近右边" << endl;
 		if (engineFace(12))
@@ -582,17 +576,30 @@ bool engineFace(int direction)
 	}
 }
 //=================================判断是否需要躲避子弹==============================
-bool needAvoidBullet(Circle myCircle, const RobotAI_BattlefieldInformation& info)
+bool needAvoidBullet(Circle myCircle,Circle enemyCircle, const RobotAI_BattlefieldInformation& info)
 {
 	switch (info.robotInformation[1 - MyId].weaponTypeName)
 	{
 	case WT_Cannon:
+		break;
+	case WT_Machinegun:
+		if (calDistance(myCircle, enemyCircle) < 300.0)
+		{
+			cout << "对方是旋转机枪，距离低于300，斩杀" << endl;
+			return false;
+		}
+		break;
 	//case WT_Shotgun:
 	case WT_RPG:
-	case WT_Machinegun:
+	
 	//case WT_Prism:
 	//case WT_Tesla:
 	case WT_PlasmaTorch:
+		if (calDistance(myCircle, enemyCircle) < 150.0)
+		{
+			return false;
+		}
+		break;
 	//case WT_MissileLauncher:
 	//case WT_ElectricSaw:
 
@@ -600,14 +607,24 @@ bool needAvoidBullet(Circle myCircle, const RobotAI_BattlefieldInformation& info
 	//case WT_GrenadeThrower:
 	//case WT_MineLayer:
 	case WT_Apollo:
+		if (MyId == 1)return true;
+		if (calDistance(myCircle, enemyCircle) < 150.0)
+		{
+			return false;
+		}
 		break;
 	default:
 		return false;
 		break;
 	}
 	cout << "=========================有子弹发射==========================" << endl;
-	for (int i = 0; i <= info.num_bullet; i++)
+	cout << "子弹数量为：" << info.num_bullet<< endl;
+	for (int i = info.num_bullet; i >= 0; i--)
 	{
+		if (i == info.num_bullet)
+		{
+			newBulletRotation = info.bulletInformation[i].rotation;
+		}
 		cout << "循环判断" << endl;
 		if (info.bulletInformation[i].launcherID == (1 - MyId))
 		{
@@ -718,7 +735,7 @@ void myPlay(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, in
 	}
 	if (obstacleResult.length() == 2)
 	{
-		if (isAvoidingBullet != 1 && startAvoidBullet != 1)
+		if (isAvoidingBullet != 1 && startAvoidBullet != 1 && startForceAvoidBullet != 1)
 		{
 			if (obstacleResult[0] == 'Y')
 			{
@@ -747,13 +764,24 @@ void myPlay(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, in
 				engineAimDirect(order, myInformation, myCircle, enemyCircle);
 			}
 		}
+		else if (startForceAvoidBullet == 1)
+		{
+			order.eturn = avoidDirection;
+			avoidTime++;
+			if (avoidTime >= avoidOffset || angleDiff(myInformation.engineRotation, newBulletRotation) <= 90.0)
+			{
+				cout << "躲避结束" << angleDiff(myInformation.engineRotation, newBulletRotation) << endl;
+				avoidTime = 1;
+				startForceAvoidBullet = 0;
+			}
+		}
 		else
 		{
-			if (isAvoidingBullet == 1&&startAvoidBullet == 0 && needAvoidBullet(myCircle, info))
+			if (isAvoidingBullet == 1&&startAvoidBullet == 0 && needAvoidBullet(myCircle, enemyCircle, info))
 			{
 				startAvoidBullet = 1;
 				isAvoidingBullet = 0;
-				avoidDirection = getAvoidBulletDirection(myCircle, info.obstacle, 10.0);
+				avoidDirection = getAvoidBulletDirection(myCircle, info.obstacle, 20.0);
 				cout << "开始躲避，躲避方向为：" << avoidDirection << endl;
 			}
 			else
@@ -764,9 +792,9 @@ void myPlay(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, in
 			{
 				order.eturn = avoidDirection;
 				avoidTime++;
-				if (avoidTime >= 30)
+				if (avoidTime >= avoidOffset || angleDiff(myInformation.engineRotation, newBulletRotation) <=100.0)
 				{
-					cout << "躲避结束" << endl;
+					cout << "躲避结束" << angleDiff(myInformation.engineRotation, newBulletRotation) << endl;
 					avoidTime = 1;
 					startAvoidBullet = 0;
 				}
@@ -777,12 +805,137 @@ void myPlay(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, in
 	{
 		cout << "判断两点间是否有障碍物出错" << endl;
 	}
-
-
+	//执行强制走位准备工作，计时
+	if (forceAvoidBullet == 1)
+	{
+		forceAvoidBulletTimeCount++;
+		if (forceAvoidBulletTimeCount >= forceAvoidBulletWaitTime)
+		{
+			cout << "开始强制躲避子弹" << endl;
+			forceAvoidBullet = 0;
+			startForceAvoidBullet = 1;
+			avoidDirection = getAvoidBulletDirection(myCircle, info.obstacle, 20.0);
+			forceAvoidBulletTimeCount = 0;
+		}
+	}
 
 
 	weaponAimDirect(order, myInformation, enemyInformation, myCircle, enemyCircle);
 	if (inTheSawAttackRange(myCircle, enemyCircle, 95.0))order.fire = 1;
+}
+void hide(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	RobotAI_RobotInformation enemyInformation;
+	RobotAI_RobotInformation myInformation;
+	
+	if (myID == 0)
+	{
+		enemyInformation = info.robotInformation[1];
+		myInformation = info.robotInformation[0];
+	}
+	else
+	{
+		enemyInformation = info.robotInformation[0];
+		myInformation = info.robotInformation[1];
+	}
+
+	Circle enemyCircle = enemyInformation.circle;
+	Circle myCircle = myInformation.circle;
+	if (myCircle.y >= 200 && myCircle.y <= 470)
+	{
+		order.run = 0;
+	}
+	else
+	{
+		order.run = 1;
+	}
+		
+
+	weaponAimDirect(order, myInformation, enemyInformation, myCircle, enemyCircle);
+	if (inTheSawAttackRange(myCircle, enemyCircle, 95.0))order.fire = 1;
+
+	if (myCircle.x < 300)
+	{
+		Circle hideCircle;
+		hideCircle.x = 175;
+		hideCircle.y = 230;
+		engineAimDirect(order, myInformation, myCircle, hideCircle);
+	}
+	else if (myCircle.x > 1066)
+	{
+		Circle hideCircle;
+		hideCircle.x = 1191;
+		hideCircle.y = 450;
+		engineAimDirect(order, myInformation, myCircle, hideCircle);
+	}
+
+}
+//检测是否立即开始战斗，否则躲藏（包含初始化avoidOffset）
+bool checkIfFightImediately(const RobotAI_BattlefieldInformation& info)
+{
+	bool flag;
+	switch (info.robotInformation[1-MyId].weaponTypeName)
+	{
+	case WT_Cannon:
+		avoidOffset = 25;
+		flag = false;
+		break;
+		//case WT_Shotgun:
+	case WT_RPG:
+		flag = false;
+		break;
+	case WT_Machinegun:
+		avoidOffset = 45;
+		flag = false;
+		break;
+		//case WT_Prism:
+		//case WT_Tesla:
+	case WT_PlasmaTorch:
+		flag = true;
+		break;
+	case WT_MissileLauncher:
+		flag = true;
+		break;
+	case WT_ElectricSaw:
+		flag = true;
+		break;
+
+		//		//二期
+		//case WT_GrenadeThrower:
+		//case WT_MineLayer:
+	case WT_Apollo:
+		avoidOffset = 35;
+		flag = false;
+		break;
+	default:
+		flag = false;
+		break;
+	}
+	if (info.robotInformation[MyId].circle.x < 300)
+	{
+		if (info.robotInformation[1 - MyId].circle.x <= 500)
+		{
+			flag = true;
+		}
+	}
+	else if (info.robotInformation[MyId].circle.x > 1066)
+	{
+		if (info.robotInformation[1 - MyId].circle.x >= 700)
+		{
+			flag = true;
+		}
+	}
+	
+	return flag;
+}
+//计算两个引擎的角度差以便计算出躲避时需要的角度
+double angleDiff(double myRotation,double enemyRotation)
+{
+	/*if (fabs(myRotation - enemyRotation) > 90.0)
+	{
+		return fabs(myRotation - enemyRotation) - 90.0;
+	}*/
+	return fabs(myRotation - enemyRotation);
 }
 void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID)
 {
@@ -807,11 +960,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		myInformation = info.robotInformation[1];
 	}
 
-	myEngineRotation = myInformation.engineRotation;
+	
 	Circle enemyCircle = enemyInformation.circle;
 	Circle myCircle = myInformation.circle;
 
-
+	myEngineRotation = myInformation.engineRotation;
+	enemyWeaponTypeName = enemyInformation.weaponTypeName;
+	weaponAmmo = get_weapon_ammo(enemyWeaponTypeName);
 	//===============================================================
 
 	//killDi(order, info, myID);
@@ -823,7 +978,10 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	else
 		engineAimDirect(order, myInformation, myCircle, enemyCircle);*/
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%测试机器%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	/*order.run = 3;
+	/*if(myCircle.x<400)order.run = 2;
+	if (myCircle.x>1000)order.run = 1;
+	if (myCircle.x >= 400 && myCircle.x <= 1000)order.run = 0;
+	weaponAimDirect(order, myInformation, enemyInformation, myCircle, enemyCircle);
 	if (myTimeCount >= 200)order.fire = 1;
 	
 	int flag = 0;
@@ -855,7 +1013,24 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	myTimeCount++;*/
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%实战机器%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	//if (myTimeCount >= 200)
+
+	if (checkIfFightImediately(info) || myTimeCount >= 180 || enemyInformation.remainingAmmo <= get_weapon_ammo(enemyInformation.weaponTypeName)/3)
+	{
+		startToFight = 1;
+	}
+
+
+	if (startToFight == 0)
+	{
+		hide(order, info, myID);
+	}
+	else
+	{
 		myPlay(order, info, myID);
+	}
+	/*if (myCircle.x >= 1000 || myCircle.x <= 400)order.run = 1;
+	if (myTimeCount >= 180)myPlay(order, info, myID);*/
+	
 	//##############每帧必执行项目##########################
 	//recordEnemyMovement(enemyCircle, 10, 4);
 	myTimeCount++;
@@ -877,7 +1052,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	weapon = WT_ElectricSaw;	//
 	engine = ET_GhostTank;	//
 	/*
-	weapon = WT_Apollo;	//
+	weapon = WT_Cannon;	//
 	engine = ET_Quad;	//
 	*/
 }
@@ -900,7 +1075,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "测试机器";
+	return "测试机器1";
 }
 
 string RobotAI::GetAuthor()
@@ -983,10 +1158,54 @@ void RobotAI::onSomeoneFire(int fireID)
 {
 	//有机甲开火时被调用
 	//参数：fireID	... 开火的机甲下标
-	if (MyId != fireID)
+	enemyFiredBulletAccount++;
+	/*cout << "myTimeCount:" << myTimeCount << endl;*/
+	switch (enemyWeaponTypeName)
 	{
-		isAvoidingBullet = 1;
+	case WT_Cannon:
+		forceAvoidBullet = 1;
+		forceAvoidBulletWaitTime = 20;
+		break;
+	case WT_Machinegun:
+		break;
+		//case WT_Shotgun:
+	case WT_RPG:
+
+		//case WT_Prism:
+		//case WT_Tesla:
+	case WT_PlasmaTorch:
+		break;
+		//case WT_MissileLauncher:
+		//case WT_ElectricSaw:
+
+		//		//二期
+		//case WT_GrenadeThrower:
+		//case WT_MineLayer:
+	case WT_Apollo:
+		forceAvoidBullet = 1;
+		forceAvoidBulletWaitTime = 40;
+		break;
+	default:
+		break;
 	}
+	if (forceAvoidBullet == 1)
+	{
+		if (enemyFiredBulletAccount == 1)
+		{
+			if (MyId != fireID)
+			{
+				isAvoidingBullet = 1;
+			}
+		}
+	}
+	else
+	{
+		if (MyId != fireID)
+		{
+			isAvoidingBullet = 1;
+		}
+	}
+		
 }
 
 
@@ -994,6 +1213,38 @@ void RobotAI::onHit(int launcherID,bullettypename btn)
 {
 	//被子弹击中时被调用
 	//参数：btn	...	击中你的子弹种类（枚举类型）
+	switch (btn)
+	{
+	case BT_Cannonball:
+	//case BT_ShotgunBall:
+	case BT_RPGBall:
+	//case BT_MachinegunBall:
+	//case BT_Prism_Laser:
+	//case BT_Tesla_Lightning:
+	//case BT_PlasmaBall:
+	//case BT_TrackingMissile:
+	//case BT_ElectricSaw:
+
+			//二期
+	//case BT_Grenade:
+	//case BT_Mine:
+
+	case BT_ApolloBall:
+
+
+	//case BT_TinyBall:	//布雷器的辅助子弹
+
+
+
+			//以下是功能性的类型
+
+	case BT_NULL:
+		break;
+	default:
+		return;
+		break;
+	}
+	//forceAvoidBullet = 1;
 }
 
 

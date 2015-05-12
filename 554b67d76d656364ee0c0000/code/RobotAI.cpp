@@ -91,9 +91,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	for (int i = 0; i < info.num_bullet; i++){
 		const auto& bullet = info.bulletInformation[i];
 		if (bullet.launcherID != myID){
-			if (dis(me.circle.x, me.circle.y,bullet.circle.x,bullet.circle.y) < 50){
+			if (dis(me.circle.x, me.circle.y,bullet.circle.x,bullet.circle.y) < 60){
 				order.run = 0;
-				
 			}
 			
 		}
@@ -110,8 +109,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	double emdis = dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y);
 	static double elx = target.circle.x, ely = target.circle.y;
-	double eex = emdis/15.0 * (target.circle.x - elx) + target.circle.x;
-	double eey = emdis/15.0 * (target.circle.y - ely) + target.circle.y;
+	double eex = emdis/10.0 * (target.circle.x - elx) + target.circle.x;
+	double eey = emdis/10.0 * (target.circle.y - ely) + target.circle.y;
 
 	elx = target.circle.x;
 	ely = target.circle.y;
@@ -177,7 +176,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_Cannon;	
+	weapon = WT_GrenadeThrower;
 	engine = ET_UFO;
 }
 

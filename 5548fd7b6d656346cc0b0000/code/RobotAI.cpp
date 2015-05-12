@@ -25,17 +25,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)	
-	
-	//x,y轴间距
-	double dx,dy;
-	dx = info.robotInformation[1-myID].circle.x - info.robotInformation[myID].circle.x;	
-	dy = info.robotInformation[1-myID].circle.y - info.robotInformation[myID].circle.y;
-	//瞄准
-	double d = sqrt(pow(dx,2)+pow(dy,2));//坦克间距
-	double vpo;//瞄准角
-	vpo = atan2(dy,dx)*180/PI;
-	
-	
+
 	double vspo[2],vspi[2];
 	double dsx[2],dsy[2];
 	double dd[2];//障碍间距
@@ -50,7 +40,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	vspi[1] = asin(info.obstacle[1].r/dd[1])*180/PI;
 	vspo[1] = atan2(dsy[1],dsx[1])*180/PI;
-	
 				
 	double dssx[2],dssy[2];
 	dssx[0]=info.arsenal[0].circle.x - info.robotInformation[myID].circle.x;
@@ -60,27 +49,40 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	double  vammo[2];
 	vammo[0] = atan2(dssy[0],dssx[0])*180/PI;//
 	vammo[1] = atan2(dssy[1],dssx[1])*180/PI;//圆心
-		
+	
+	//预判
+	
+	//x,y轴间距
+	double dx,dy;
+	dx = info.robotInformation[1-myID].circle.x - info.robotInformation[myID].circle.x;	
+	dy = info.robotInformation[1-myID].circle.y - info.robotInformation[myID].circle.y;
+	//夹角数据组
+	double d = sqrt(pow(dx,2)+pow(dy,2));//坦克间距
+	//面对角
+	double vpo;
+	vpo = atan2(dy,dx)*180/PI;
+
+	//瞄准
 	int fire=0;
-	if(info.robotInformation[myID].weaponRotation > vpo+1){
+	if(info.robotInformation[myID].weaponRotation > vpo-6){
 		if(info.robotInformation[myID].weaponRotation - vpo > 180){ order.wturn = 1;}
 		else{ order.wturn = -1;}
 	}
-	else if(info.robotInformation[myID].weaponRotation < vpo-1){ 
+	else if(info.robotInformation[myID].weaponRotation < vpo+6){ 
 		if(vpo - info.robotInformation[myID].weaponRotation > 180){ order.wturn = -1;}
 		else{ order.wturn = 1;}
 	}
-	else { fire=1;}
-	
+	if(abs(info.robotInformation[myID].weaponRotation - vpo) < 10){ fire=1;}
+
 	//开火
 	if(info.robotInformation[myID].remainingAmmo != 0){	
 		if(fire == 1){
 			if(
-			(info.robotInformation[myID].weaponRotation > vspo[0]+vspi[0]+2 
-			|| info.robotInformation[myID].weaponRotation < vspo[0]-vspi[0]-2) 
+			(info.robotInformation[myID].weaponRotation > vspo[0]+vspi[0] 
+			|| info.robotInformation[myID].weaponRotation < vspo[0]-vspi[0]) 
 				&& 
-			(info.robotInformation[myID].weaponRotation > vspo[1]+vspi[1]+2
-			|| info.robotInformation[myID].weaponRotation < vspo[1]-vspi[1]-2)
+			(info.robotInformation[myID].weaponRotation > vspo[1]+vspi[1]
+			|| info.robotInformation[myID].weaponRotation < vspo[1]-vspi[1])
 			){
 				order.fire = 1;
 			}
@@ -112,31 +114,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		}
 
 		else if(info.robotInformation[1-myID].weaponTypeName == WT_Prism){
-			//WT_Prism光棱  
-			/*
-			if(info.robotInformation[1-myID].hp > info.robotInformation[myID].hp+6 ){ 
-				if(d > 300 ){ 
-					gotoFight(order,info.robotInformation[myID].engineRotation,vpo);
-				}
-				else{
-					if(vpo <= 0 && info.robotInformation[myID].engineRotation >= 0){
-						if(info.robotInformation[myID].engineRotation - vpo < 275){ order.eturn = 1;}		
-					}
-					if(vpo <= 0 && info.robotInformation[myID].engineRotation <= 0){
-						if(vspo[0] - info.robotInformation[myID].engineRotation > 85){ order.eturn = 1;}	
-					}
-					if(vpo >= 0 && info.robotInformation[myID].engineRotation >= 0){
-						if(vspo[0] - info.robotInformation[myID].engineRotation > 85){ order.eturn = 1;}	
-					}
-					if(vpo >= 0 && info.robotInformation[myID].engineRotation <= 0){
-						if(vpo - info.robotInformation[myID].engineRotation > 85){ order.eturn = 1;}
-					}	
-				}	
+			//WT_Prism光棱 
+			if(info.robotInformation[1-myID].hp < info.robotInformation[myID].hp + 40){
+				gotoFight(order,info.robotInformation[myID].engineRotation,vpo);
 			}
 			else{
-			*/
-				gotoFight(order,info.robotInformation[myID].engineRotation,vpo);
-			//}
+				gotoCircle(order,info.robotInformation[myID].circle,info.robotInformation[myID].engineRotation);
+			}
 			order.run = 1;
 		}
 
@@ -144,7 +128,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			|| info.robotInformation[1-myID].weaponTypeName == WT_Machinegun
 			|| info.robotInformation[1-myID].weaponTypeName == WT_Shotgun ){
 			//WT_RPG 火箭筒  WT_Machinegun 旋转机枪
-			
 			if(info.robotInformation[1-myID].remainingAmmo > 3){
 				int i=myID;
 				if(myID == 1 && info.robotInformation[1-myID].circle.x>700) { i = 0;}
@@ -179,8 +162,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			//WT_Cannon 加农炮  WT_Apollo阿波罗
 			if(info.robotInformation[1-myID].remainingAmmo * 25 >= info.robotInformation[myID].hp){
 				if(myID == 1 ){
-				//左上角
-					if(dd[1] < 150 ){ 					
+					if(dd[1] > 200 ){ 					
 						raoStone(order,info.robotInformation[myID].engineRotation,vspo[1]);
 					}
 					else { 
@@ -188,8 +170,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 					}			
 				}
 				else{
-					//右下角
-					if(dd[0] < 150 ){ 					
+					if(dd[0] > 200 ){ 					
 						raoStone(order,info.robotInformation[myID].engineRotation,vspo[0]);
 					}
 					else { 
@@ -213,7 +194,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			}
 			order.run = 1;
 		}
-
 		else if(info.robotInformation[1-myID].weaponTypeName == WT_ElectricSaw){
 			//WT_ElectricSaw电锯  
 			if(myID == 1){
@@ -234,15 +214,24 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 					gotoCircle(order,info.robotInformation[myID].circle,info.robotInformation[myID].engineRotation);		
 				}			
 			}	 
-			if(d < 100){order.run = 1;}//绕行
+			if(d < 200){order.run = 1;}//绕行
 			else if(d>300){ order.run = 1;}
 		}
-
 		else {
 			//其他策略
 			//WT_GrenadeThrower手雷 WT_PlasmaTorch 等离子弹弹 —— 躲墙消耗弹药
-			//WT_MineLayer 布雷车 —— 躲雷 守弹药点
-			gotoFight(order,info.robotInformation[myID].engineRotation,vpo);
+			//WT_MineLayer 布雷车
+			if(info.robotInformation[myID].hp>35){//就是干
+				gotoFight(order,info.robotInformation[myID].engineRotation,vpo);
+			}
+			else{//守弹药点
+				double tempx,tempy;
+				tempx=info.arsenal[1].circle.x - info.robotInformation[myID].circle.x;
+				tempy=(info.arsenal[1].circle.y-120) - info.robotInformation[myID].circle.y;
+				double  vpp;
+				vpp = atan2(tempx,tempy)*180/PI;
+				gotoFight(order,info.robotInformation[myID].engineRotation,vpp);
+			}
 			order.run = 1; 
 		}	
 	}
@@ -264,7 +253,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			order.run = 1;
 	}
 
-	if(d < 100){
+	if(d < 300){
 		order.fire = 1;
 	}
 }
