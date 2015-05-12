@@ -79,13 +79,13 @@ void controlfire(Circle mypoint, Circle otherpoint, double radfire, int&fire, in
 	double  ins;
 	ins = (otherpoint.r - A.r*0.04366) / (otherpoint.y*0.04366 + A.r);
 	double radins = atan(ins) * 180 / PI;
-	radins -= 0.1;
+	radins -= radins*A.r / 1400;
 	double radother = getAngle(mypoint, otherpoint);
 	wturn = turnfire(radfire, radother, radins, state);
 	if (state == 1)
 	{
 		bool aa = 0;
-		Circle b[2] = { 300, 250, 82, 1066, 430, 82 };
+		Circle b[2] = { 300, 250, 82 + A.r/1400*15, 1066, 430, 82+A.r/1400*15 };
 		double rad3, rad4;
 		rad3 = getAngle(mypoint, b[0]);
 		rad4 = getAngle(mypoint, b[1]);
@@ -218,7 +218,7 @@ string RobotAI::GetName()
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "圈儿";
+	return "菜刀队";
 }
 
 

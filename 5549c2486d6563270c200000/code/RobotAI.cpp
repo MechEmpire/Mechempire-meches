@@ -34,12 +34,21 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
 
 	RobotAI_RobotInformation me = info.robotInformation[myID], armor = info.robotInformation[1 - myID];
+	double distance_me_armor = Distance(me.circle.x, me.circle.y, armor.circle.x, armor.circle.y);//我和敌人的距离
 	//根据是否有障碍物决定是否开火
 	Circle obs[5];
 	for(int i = 0; i < info.num_obstacle; i++)
 		obs[i] = info.obstacle[i];
 	double fire_angle = howToRotate(me.circle, armor.circle, me.weaponRotation, armor.vx, armor.vy);//应该旋转的角度
-	order.fire = doIFire(me.circle, armor.circle, obs, info.num_obstacle, me.weaponRotation, fire_angle);
+	//针对太空要塞做优化，贴脸打！
+	if( armor.engineTypeName != ET_Shuttle)
+		order.fire = doIFire(me.circle, armor.circle, obs, info.num_obstacle, me.weaponRotation, fire_angle);
+	else{
+		if(distance_me_armor > 170)
+			order.fire = 0;
+		else
+			order.fire = 1;
+	}
 
 	//根据对方的位置调整炮塔角度
 	order.wturn = Rotate(fire_angle, me.weaponRotation);
@@ -49,15 +58,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	order.eturn =  runAndrunAFV(me.circle, armor.circle, me.engineRotation);
 	if(avoidObstacleAFV(me.circle, obs, info.num_obstacle))//遇到障碍物？
 		order.eturn = -1;
-	double distance_me_armor = Distance(me.circle.x, me.circle.y, armor.circle.x, armor.circle.y);
-	if(armor.weaponTypeName != WT_MissileLauncher && armor.engineTypeName != ET_Shuttle){//打猥琐飞弹和太空要塞只需贴脸！
-		if(distance_me_armor <= 400)//太近了就往回走
-		order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
-	}
-	
-	
-
-			
+		
 	//等等！有子弹再打我？
 	//Circle bu[200];
 	int bu_num = info.num_bullet;
@@ -70,12 +71,24 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			}
 		}
 	}
+	//判断距离，不能太近
+	
+	double min_dist = 350;
+	if(armor.weaponTypeName == WT_ElectricSaw)
+		min_dist = 550;
+	if(armor.weaponTypeName != WT_MissileLauncher && armor.engineTypeName != ET_Shuttle){//打猥琐飞弹和太空要塞只需贴脸！
+		if(distance_me_armor <= min_dist)//太近了就往回走
+		order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
+	}
+	
 	//检查子弹打光没	
 	if(info.robotInformation[myID].remainingAmmo <= 1 )
 	{
-		//没子弹了就去仓库领取
-		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1], me.circle),me.engineRotation);
+		//没子弹了就去仓库领取,如果血量较低，则不能贪子弹，以躲子弹为主
+		if(me.hp > 25 )
+			order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1], me.circle),me.engineRotation);
 	}
+	
 	
 	lastPlace[0] = info.robotInformation[myID].circle;
 	lastPlace[1] = info.robotInformation[1-myID].circle;
@@ -352,7 +365,7 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 		v1Angle = atan2(vy, vx) * 180 / PI;
 		double ABC_angle = 180 - v1Angle + angle;//辅助角CBD
 		double d_AC = sqrt(d*d + r*r - 2*d*r*cos(ABC_angle / 180 * PI));//三角形的AC边
-		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * 0.65;//0.75是修正因子
+		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * 0.45;//0.75是修正因子
 		//fout<<d<<"  "<<r<<"   "<<v1Angle<<"   "<<angle<<"   "<<ABC_angle<<"   "<<offset<<endl;		
 		//加上偏移角
 		if(angle > 0 && angle < 180){
@@ -429,12 +442,12 @@ Circle RobotAI::whichArsenal(RobotAI_ArsenalInformation ar1, RobotAI_ArsenalInfo
 		}else{
 			return ar2.circle;
 		}
-	}else if(ar1.respawning_time == 0)	
+	}else if(ar1.respawning_time == 0 || ar1.respawning_time < ar2.respawning_time)	
 		return ar1.circle;
-	else if(ar2.respawning_time == 0)
+	else if(ar2.respawning_time == 0 || ar1.respawning_time > ar2.respawning_time)
 		return ar2.circle;
-	else
-		return Circle();
+	else if(ar1.respawning_time == ar2.respawning_time)
+		return ar1.circle;
 }
 //距离函数
 double RobotAI::Distance(double x1, double y1, double x2, double y2)
