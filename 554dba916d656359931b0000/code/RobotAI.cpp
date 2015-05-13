@@ -1,5 +1,6 @@
 ﻿#include "RobotAI.h"
 #include "Aiming.h"
+#include <fstream>
 #include "Battlefield.h"
 #include "UFO.h"
 
@@ -73,11 +74,11 @@ void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 					break;
 					isBreak = true;
 				}
-				if (isBreak)
-				{
-					isBreak = false;
-					break;
-				}
+			}
+			if (isBreak)
+			{
+				isBreak = false;
+				break;
 			}
 
 		}
@@ -127,7 +128,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	order.wturn = aiming(info, info.robotInformation[enemyID].circle.x, info.robotInformation[enemyID].circle.y, myID, myWpRotSpeed);
 	int firePower = fractionHit(info, info.robotInformation[myID].circle.x, info.robotInformation[myID].circle.y, 95, info.robotInformation[myID].weaponRotation, 5, 46, info.robotInformation[enemyID].circle.x, info.robotInformation[enemyID].circle.y);
 	printf("Frame: %i. Firepower %i\n", frame, firePower);
-	if (firePower % 100 > 50)
+	if (firePower % 100 > 30)
 	{
 		order.fire = 1;
 	}

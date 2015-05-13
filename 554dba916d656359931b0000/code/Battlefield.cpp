@@ -78,7 +78,7 @@ bool isOutOfMap(const RobotAI_BattlefieldInformation& info, const double x, cons
 	}
 	for (int i = 0; i < 2; i++)
 	{
-		if (pow(x - info.obstacle[i].x, 2) + pow(y - info.obstacle[i].y, 2) < pow(info.obstacle[i].r, y))
+		if (pow(x - info.obstacle[i].x, 2) + pow(y - info.obstacle[i].y, 2) < pow(info.obstacle[i].r, 2))
 		{
 			return true;
 		}

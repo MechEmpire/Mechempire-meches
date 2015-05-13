@@ -40,11 +40,11 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	for(int i = 0; i < info.num_obstacle; i++)
 		obs[i] = info.obstacle[i];
 	double fire_angle = howToRotate(me.circle, armor.circle, me.weaponRotation, armor.vx, armor.vy);//应该旋转的角度
-	//针对太空要塞做优化，贴脸打！
+	//针对太空要塞做优化，贴近点打！
 	if( armor.engineTypeName != ET_Shuttle)
 		order.fire = doIFire(me.circle, armor.circle, obs, info.num_obstacle, me.weaponRotation, fire_angle);
 	else{
-		if(distance_me_armor > 170)
+		if(distance_me_armor > 700)
 			order.fire = 0;
 		else
 			order.fire = 1;
@@ -56,9 +56,15 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//杀向敌人！
 	order.run = 1;
 	order.eturn =  runAndrunAFV(me.circle, armor.circle, me.engineRotation);
-	if(avoidObstacleAFV(me.circle, obs, info.num_obstacle))//遇到障碍物？
-		order.eturn = -1;
+	
 		
+	//检查子弹打光没	
+	if(info.robotInformation[myID].remainingAmmo <= 1 )
+	{
+		//没子弹了就去仓库领取
+		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1], me.circle),me.engineRotation);
+	}
+
 	//等等！有子弹再打我？
 	//Circle bu[200];
 	int bu_num = info.num_bullet;
@@ -76,18 +82,15 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	double min_dist = 350;
 	if(armor.weaponTypeName == WT_ElectricSaw)
 		min_dist = 550;
-	if(armor.weaponTypeName != WT_MissileLauncher && armor.engineTypeName != ET_Shuttle){//打猥琐飞弹和太空要塞只需贴脸！
+	//打猥琐飞弹和光棱和磁暴只要贴脸干！其他的要远离，尤其是电锯！
+	if(armor.weaponTypeName != WT_MissileLauncher && armor.weaponTypeName !=WT_Prism && armor.weaponTypeName !=WT_Tesla){
 		if(distance_me_armor <= min_dist)//太近了就往回走
 		order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
 	}
+	//遇到障碍物？
+	if(avoidObstacleAFV(me.circle, obs, info.num_obstacle))
+		order.eturn = -1;
 	
-	//检查子弹打光没	
-	if(info.robotInformation[myID].remainingAmmo <= 1 )
-	{
-		//没子弹了就去仓库领取,如果血量较低，则不能贪子弹，以躲子弹为主
-		if(me.hp > 25 )
-			order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1], me.circle),me.engineRotation);
-	}
 	
 	
 	lastPlace[0] = info.robotInformation[myID].circle;
@@ -407,7 +410,7 @@ int RobotAI::doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,doubl
 	double distWithAr = Distance(me.x, me.y, armor.x, armor.y), //与敌人的距离
 		distWithObs1 = Distance(me.x, me.y, obstacle[0].x, obstacle[0].y),
 		distWithObs2 = Distance(me.x, me.y, obstacle[1].x, obstacle[1].y),distWithObs;
-	if(distWithAr >= 900)//距离太远就不打！
+	if(distWithAr >= 1000)//距离太远就不打！
 		return 0;
 	if(distWithObs1 < distWithObs2)
 	{

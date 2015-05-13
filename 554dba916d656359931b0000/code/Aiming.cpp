@@ -148,9 +148,38 @@ int fractionHit(const RobotAI_BattlefieldInformation& info, double myX, double m
 	}
 
 	int ratioHit = int(floor((maxAngleList[2] - minAngleList[2]) / angleRange * 100));
-	if (ratioHit > 0)
+	if (ratioHit != 0)
 	{
 		ratioHit--;
 	}
 	return (ratioBlocked) * 100 + ratioHit;
+}
+
+void forecastPosition(const RobotAI_BattlefieldInformation& info, int myID)
+{
+	int enemyID = 1 - myID;
+	double enemyX = info.robotInformation[enemyID].circle.x;
+	double enemyY = info.robotInformation[enemyID].circle.x;
+	double enemyVX = info.robotInformation[enemyID].vx;
+	double enemyVY = info.robotInformation[enemyID].vy;
+	int enemyAmmo = info.robotInformation[enemyID].remainingAmmo;
+	weapontypename enemyWeapon = info.robotInformation[enemyID].weaponTypeName;
+	enginetypename enemyEngine = info.robotInformation[enemyID].engineTypeName;
+
+	switch (enemyEngine)
+	{
+	case ET_Quad:
+	case ET_Spider:
+		break; // TO DO : Spider forecast
+	case ET_UFO:
+	case ET_XCraft:
+		break;
+	case ET_AFV:
+	case ET_GhostTank:
+		break;
+	case ET_Robotman:
+		break;
+	case ET_Shuttle:
+		break;
+	}
 }

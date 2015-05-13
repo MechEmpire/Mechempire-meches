@@ -123,6 +123,12 @@ public:
 	void RobotAI::onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//移动函数
 	void RobotAI::onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//开火函数
 	
+	double RobotAI::abvalue(double x);
+	double RobotAI::pointdis(const Circle a1, const Circle a2, const Circle a3);
+	double RobotAI::pointdis(double x1, double y1, double x2, double y2, double x3, double y3);
+	double RobotAI::dis(double x1, double y1, double x2, double y2);
+	double RobotAI::dis(const Circle& a, const Circle& b);
+	
 
 
 };

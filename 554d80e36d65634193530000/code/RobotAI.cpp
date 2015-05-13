@@ -145,41 +145,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	Circle mypoint = info.robotInformation[myID].circle;
 	Circle otherpoint = info.robotInformation[1 - myID].circle;
 	controlfire(mypoint, otherpoint, radfire, order.fire, order.wturn);
-	//cout << radfire << '\n';
-	//system("pause");
-	int stape = 0;
-	static int st = 0;
-	++st;
+	order.run = 1;
 	
-	if (st>70&&st<330)
-		order.run = 1;
-	if ((st-330)%50<25)
-		order.run = 1;
-	else
-		order.run = -1;
-	/*if (myID == 1)
-	{
-		
-		if (st <= 45)
-			order.eturn = 1;
-		if ((st - 45) % 870 > 680)
-		{
-			order.eturn = 1;
-		}
-		if (st<200&&st>300)
-			order.run = 1;
-	}
-	if (myID == 0)
-	{
-		if (st <= 45)
-			order.eturn = 1;
-		if ((st - 45) % 770 > 680)
-		{
-			order.eturn = 1;
-		}
-		if (st<200 && st>300)
-			order.run = 1;
-	}*/
 	
 		
 }
@@ -218,7 +185,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "登革热";
+	return "徳玛西亚";
 }
 
 string RobotAI::GetAuthor()
@@ -235,17 +202,17 @@ string RobotAI::GetAuthor()
 int RobotAI::GetWeaponRed()
 {
 	//返回一个-255-255之间的整数,代表武器红色的偏移值
-	return -179;
+	return 60;
 }
 int RobotAI::GetWeaponGreen()
 {
 	//返回一个-255-255之间的整数,代表武器绿色的偏移值
-	return 10;
+	return 75;
 }
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return 209;
+	return -115;
 }
 
 
@@ -255,17 +222,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return 32;
+	return 85;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return 231;
+	return -70;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return 220;
+	return -65;
 }
 
 
