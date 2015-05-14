@@ -9,6 +9,7 @@ struct bulletInfo
 	double y;
 	double vx;
 	double vy;
+	int tag;
 };
 
 #endif

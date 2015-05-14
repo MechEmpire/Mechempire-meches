@@ -15,6 +15,9 @@ protected:
 	Circle barrierRD; 
 	bool hitbyBarriersLU;
 	bool hitbyBarriersRD;
+
+	double disLU;
+	double disRD;
 	 int count;
 
 public:
@@ -125,8 +128,7 @@ public:
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
 
 	bool HitTestCircles( Circle &c1, const Circle &c2);
-
-
+	double dis(double  x1,double x2,double y1,double y2);
 
 
 

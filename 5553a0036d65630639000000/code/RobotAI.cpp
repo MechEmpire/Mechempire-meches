@@ -162,7 +162,12 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 //UFO行走
 
-		if (selfE.y>=armyE.y&&angleE>=0)
+
+	//躲避机关枪
+
+	
+
+				if (selfE.y>=armyE.y&&angleE>=0)
 	{
 
 //		cout<<"   我方在下  UFO朝下";
@@ -236,6 +241,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		
 	}
 	
+
+
 	order.run=1;
 	
 	//白刃冲刺
@@ -327,7 +334,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	//开火判定
 
-	if (distance<=120+armyE.r)
+	if (distance<=105+armyE.r&&(fabs(sumangle)<=9||fabs(chaangle)<=9))
 	{
 		order.fire=1;
 		
@@ -444,6 +451,8 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 	selfE.r=info.robotInformation[myID].circle.r;
 	cout<<"my radus="<<selfE.r<<endl;
 	cout<<"army's radus="<<armyE.r<<endl;
+
+	//初始化障碍物信息
 	barrierLU.x=300;
 	barrierLU.y=250;
 	barrierLU.r=75;
@@ -495,3 +504,12 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 	
 	return ((rr*rr)>=dis2);
 }
+
+
+
+	double RobotAI::dis(double  x1,double x2,double y1,double y2)
+	{
+		double xx=x1-x2;
+		double yy=y1-y2;
+		return sqrt(xx*xx+yy*yy);
+	}

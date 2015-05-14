@@ -51,7 +51,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	if (b_index_nearest != -1)//如果有敌方子弹则进行躲避判断
 	{
 		auto bullet = info.bulletInformation[b_index_nearest];
-		if (dis(bullet.circle, me.circle) <= 0.6 * me.circle.r *getBulletSpeed(bullet.type))
+		if (dis(bullet.circle, me.circle) <= 0.6 * me.circle.r *getBulletSpeed(bullet.type))//判断在监控范围内再躲
 		{
 			isDodge = onDodge(order, info, myID, bullet);
 		}
@@ -355,15 +355,6 @@ void RobotAI::onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation
 	switch (MyCar)
 	{
 	case AFV_Esaw:
-		
-		if (
-			!HaveBarrier(info, myID, 0) &&
-			!HaveBarrier(info, myID, 1) &&
-			(onTagRota(info, myID)<3) &&
-			(onTagRota(info, myID)>-3) &&
-			dis(me.circle, tag.circle)<95 + tag.circle.r
-			)
-			order.fire = 1;		
 		if (tag.weaponTypeName == WT_ElectricSaw)
 		{
 			if (
@@ -371,10 +362,19 @@ void RobotAI::onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation
 				!HaveBarrier(info, myID, 1) &&
 				(onTagRota(info, myID)<3) &&
 				(onTagRota(info, myID)>-3) &&
-				dis(me.circle, tag.circle)<120+tag.circle.r
+				dis(me.circle, tag.circle)<120 + tag.circle.r
 				)
 				order.fire = 1;
+			break;
 		}
+		if (
+			!HaveBarrier(info, myID, 0) &&
+			!HaveBarrier(info, myID, 1) &&
+			(onTagRota(info, myID)<3) &&
+			(onTagRota(info, myID)>-3) &&
+			dis(me.circle, tag.circle)<95 + tag.circle.r
+			)
+			order.fire = 1;				
 		break;
 	case AFV_Prism:
 	case AFV_WT_Machinegun:
@@ -396,14 +396,42 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 //躲闪函数，如果发出了躲避命令，则返回true;
 {	
 	auto me = info.robotInformation[myID];
+	auto tag = info.robotInformation[myID];
 	double Rota_bulv = atan2(bullet.vy, bullet.vx) * 180 / PI;//子弹速度方向
-	double Rota_bulv_ag = Rota_bulv - Rota_bulv / abvalue(Rota_bulv) * 180;//子弹速度反方向
+	double Rota_bulv_ag = Rota_bulv - 180;//子弹速度反方向
+	AngleAdjust(Rota_bulv_ag);
 	auto Type_Bul = bullet.type;
 	switch (MyCar)
 	{
 	case AFV_Esaw:
 		if (order.fire == 1)
 			return false;
+		switch (Type_Bul)
+		{
+		case BT_ShotgunBall:
+		case BT_MachinegunBall:
+			order.eturn = 1;
+			order.run = 1;
+			return true;
+			break;
+		case BT_Cannonball:
+		case BT_ApolloBall:
+			if (tag.remainingAmmo <= 3)
+				return false;
+			order.eturn = 1;
+			order.run = 1;
+			return true;
+			break;
+		default:
+			if (me.engineRotation >= Rota_bulv_ag)
+				order.eturn = -1;
+			else
+				order.eturn = 1;
+			order.run = 1;
+			return true;
+			break;
+		}
+		break;
 	case AFV_Prism:
 	case AFV_WT_Machinegun:	
 	default:
@@ -411,10 +439,16 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 		{
 		case BT_ShotgunBall:
 		case BT_MachinegunBall:	
-		case BT_Mine:
 			order.eturn = 1;
 			order.run = 1;
 			return true;
+			break;
+		case BT_Cannonball:
+		case BT_ApolloBall:
+			order.eturn = 1;
+			order.run = 1;
+			return true;
+	
 		default:
 			if (me.engineRotation >= Rota_bulv_ag)
 				order.eturn = -1;
@@ -430,31 +464,36 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 bool RobotAI::WillHit(const RobotAI_BulletInformation& bullet, const RobotAI_RobotInformation& rotinfo)
 //判断子弹能否击中rotinfo
 {
-	double pointdis_me_bul = pointdis(
-		bullet.circle.x,
-		bullet.circle.y,
-		bullet.circle.x + bullet.vx,
-		bullet.circle.y + bullet.vy,
-		rotinfo.circle.x,
-		rotinfo.circle.y
-		);
-	double Rota = atan2(rotinfo.circle.y - bullet.circle.y, 
-		rotinfo.circle.x- bullet.circle.x) * 180 / PI;//子弹为原点，子弹和机甲中心所构成的角
-	double Rota_bul = atan2(bullet.vy-rotinfo.vx, bullet.vx-rotinfo.vy) * 180 / PI;//子弹相对机甲射击方向角
-	double dis_me_bul = sqrt(dis(bullet.circle, rotinfo.circle));
-	double Rota_hit = atan2(
-		rotinfo.circle.r,
-		sqrt(dis_me_bul*dis_me_bul - rotinfo.circle.r*rotinfo.circle.r)
-		);//能击中的角度范围
-	if (
-		pointdis_me_bul <= rotinfo.circle.r &&
-		(Rota_bul<Rota + abvalue(Rota_hit) || Rota_bul>Rota - abvalue(Rota_hit))
-		)
-		return true;
-	else
-		return false;
-	
-	
+	//double pointdis_me_bul = pointdis(
+	//	bullet.circle.x,
+	//	bullet.circle.y,
+	//	bullet.circle.x + bullet.vx,
+	//	bullet.circle.y + bullet.vy,
+	//	rotinfo.circle.x,
+	//	rotinfo.circle.y
+	//	);
+	//double Rota = atan2(rotinfo.circle.y - bullet.circle.y, 
+	//	rotinfo.circle.x- bullet.circle.x) * 180 / PI;//子弹为原点，子弹和机甲中心所构成的角
+	//double Rota_bul = atan2(bullet.vy-rotinfo.vx, bullet.vx-rotinfo.vy) * 180 / PI;//子弹相对机甲射击方向角
+	//double dis_me_bul = sqrt(dis(bullet.circle, rotinfo.circle));
+	//double Rota_hit = atan2(
+	//	rotinfo.circle.r,
+	//	sqrt(dis_me_bul*dis_me_bul - rotinfo.circle.r*rotinfo.circle.r)
+	//	);//能击中的角度范围
+	//if (
+	//	pointdis_me_bul <= rotinfo.circle.r &&
+	//	(Rota_bul<Rota + abvalue(Rota_hit) || Rota_bul>Rota - abvalue(Rota_hit))
+	//	)
+	//	return true;
+	//else
+	//	return false;
+	double Rota_bul = atan2(bullet.vy, bullet.vx ) * 180 / PI;//子弹相对机甲射击方向角
+	AngleAdjust(Rota_bul);
+	Beam bulbeam;
+	bulbeam.x = bullet.circle.x;
+	bulbeam.y = bullet.circle.y;
+	bulbeam.rotation = Rota_bul;
+	return HitTestBeamCircle(bulbeam, rotinfo.circle);
 }
 
 double RobotAI::abvalue(double x)
@@ -466,10 +505,23 @@ double RobotAI::abvalue(double x)
 }
 
 double RobotAI::pointdis(double x1, double y1, double x2, double y2, double x3, double y3)
+//返回（x3,y3)到(x1,y1),(x2,y2)连线的距离
 {
 	double A = (y2 - y1) / (x2 - x1);
 	double B = -1.0;
 	double C = y1 - (y2 - y1)*x1 / (x2 - x1);
+	double son = A*x3 + B*y3 + C;
+	double Abvalue = son / sqrt(A*A + B*B);
+	if (Abvalue > 0)
+		return Abvalue;
+	else
+		return -Abvalue;
+}
+double pointdis(double k, double x1, double y1, double x3, double y3)
+{
+	double A = k;
+	double B = -1.0;
+	double C = y1 - k*x1;
 	double son = A*x3 + B*y3 + C;
 	double Abvalue = son / sqrt(A*A + B*B);
 	if (Abvalue > 0)

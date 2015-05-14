@@ -361,7 +361,8 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 	double v1Angle;//敌人速度方向
 	double offset = 0;//这是偏移角
 	double armor_move = Distance(queue_lastFivePoint.front().x, queue_lastFivePoint.front().y,
-		queue_lastFivePoint.back().x, queue_lastFivePoint.back().y);//敌人前5帧运动的长度	
+		queue_lastFivePoint.back().x, queue_lastFivePoint.back().y);//敌人前5帧运动的长度
+	//fout<< armor_move <<"   "<<queue_lastFivePoint.size()<<endl;
 	if( armor_move > 6)//当敌人运动的时候计算偏移角
 	{
 		double v1 = Distance(vx, vy, 0, 0);//计算armorSpeed速度也可以套用distance函数

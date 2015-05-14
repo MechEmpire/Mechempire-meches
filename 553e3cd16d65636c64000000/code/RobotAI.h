@@ -142,7 +142,8 @@ public:
 	bool WillHit(const RobotAI_BulletInformation& bullet, const RobotAI_RobotInformation& rotinfo);//将会击中自己的子弹数
 	double abvalue(double x);
 	double pointdis(const Circle a1, const Circle a2, const Circle a3);
-	double pointdis(double x1, double y1, double x2, double y2, double x3, double y3);
+	double pointdis(double x1, double y1, double x2, double y2, double x3, double y3); 
+	double pointdis(double k,double x1,double y1,double x3, double y3);
 	double dis(double x1, double y1, double x2, double y2);
 	double dis(const Circle& a, const Circle& b);
 	

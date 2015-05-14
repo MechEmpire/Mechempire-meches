@@ -1,4 +1,7 @@
 #include "UFO.h"
+#include "BulletInfo.h"
+#include "Battlefield.h"
+#include "GeneralFunc.h"
 
 void reflectAngle(const RobotAI_BattlefieldInformation& info, double &x, double &y, double &vx, double &vy)
 {
@@ -89,4 +92,91 @@ void diskMove(const RobotAI_BattlefieldInformation& info, double &x, double &y, 
 	y += vy;
 
 	reflectAngle(info, x, y, vx, vy);
+}
+
+int ufoHide(bulletInfo* bullet, const int bulletNum, const RobotAI_BattlefieldInformation& info, const int myID)
+{
+	const int ForecastTimes = 4; // change following with comment
+	const int SkipTimes = 5;
+	bulletInfo *bulletChange = new bulletInfo[500 * ForecastTimes * SkipTimes];
+	int bulletChangeNum[ForecastTimes * SkipTimes];
+	double *possSol = new double[1296](); //
+	for (int i = 0; i < int(pow(6, ForecastTimes)); i++)
+	{
+		*(possSol + i) = 0;
+	}
+	int bestSol = -1;
+	double bestSolRes = -1;
+
+	bulletUpdate(info, bullet, bulletNum, bulletChange, bulletChangeNum, ForecastTimes * SkipTimes);
+
+	for (int i = 0; i < int(pow(6, ForecastTimes)); i++)
+	{
+		double myX = info.robotInformation[myID].circle.x;
+		double myY = info.robotInformation[myID].circle.y;
+		double myVX = info.robotInformation[myID].vx;
+		double myVY = info.robotInformation[myID].vy;
+		double myEngRot = info.robotInformation[myID].engineRotation;
+
+		int crashedBullet[500];
+		int crashedBulletNum = 0;
+
+		for (int j = 0; j < ForecastTimes; j++)
+		{
+			int order = int(i / int(pow(6, j))) % 6;
+
+			for (int rep = 0; rep < SkipTimes; rep++)
+			{
+				diskMove(info, myX, myY, myVX, myVY, myEngRot, order % 2, transformOrder(order));
+				double nearestOne = 10000;
+				for (int bn = 0; bn < bulletChangeNum[j * SkipTimes + rep]; bn++)
+				{
+					bool isSkip = false;
+
+					for (int cbn = 0; cbn < crashedBulletNum; cbn++)
+					{
+						if (crashedBullet[cbn] == (*(bulletChange + (j * SkipTimes + rep) * 500 + bn)).tag)
+						{
+							isSkip = true;
+						}
+					}
+					double x = (*(bulletChange + (j * SkipTimes + rep) * 500 + bn)).x;
+					double y = (*(bulletChange + (j * SkipTimes + rep) * 500 + bn)).y;
+					double vx = (*(bulletChange + (j * SkipTimes + rep) * 500 + bn)).vx;
+					double vy = (*(bulletChange + (j * SkipTimes + rep) * 500 + bn)).vy;
+
+					if (pow(myX - x, 2) + pow(myY - y, 2) < 46 * 46)
+					{
+						if (!isSkip)
+						{
+							*(possSol + i) += 100;
+							crashedBullet[crashedBulletNum] = (*(bulletChange + (j * SkipTimes + rep) * 500 + bn)).tag;
+							crashedBulletNum++;
+							isSkip = true;
+						}
+					}
+					else if (pow(myX - x, 2) + pow(myY - y, 2) < 500 * 500)
+					{
+						double relX = myX - x;
+						double relY = myY - y;
+						if (!isSkip && (relX * vx + relY * vy > 0))
+						{
+							//printf("%f ", 1 / sqrt(relX * relX + relY * relY) / abs(sin(acos((relX * vx + relY * vy) / sqrt(relX * relX + relY * relY) / sqrt(vx * vx + vy * vy)))) / sqrt(relX * relX + relY * relY));
+							*(possSol + i) += 1 / sqrt(relX * relX + relY * relY) / abs(sin(acos((relX * vx + relY * vy) / sqrt(relX * relX + relY * relY) / sqrt(vx * vx + vy * vy)))) / sqrt(relX * relX + relY * relY);
+						}
+					}
+				}
+			}
+		}
+		if (i == 0 || bestSolRes > *(possSol + i))
+		{
+			bestSolRes = *(possSol + i);
+			bestSol = i;
+		}
+	}
+	//printf("BesRes: %i, %i\n", bestSol, bestSolRes);
+	delete[] bulletChange;
+	delete[] possSol;
+	//printf("Best Sol: %f \n", bestSolRes);
+	return (bestSol % 6);
 }

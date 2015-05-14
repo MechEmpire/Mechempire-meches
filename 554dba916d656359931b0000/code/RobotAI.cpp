@@ -1,6 +1,6 @@
 ﻿#include "RobotAI.h"
 #include "Aiming.h"
-#include <fstream>
+#include "GeneralFunc.h"
 #include "Battlefield.h"
 #include "UFO.h"
 
@@ -23,30 +23,19 @@ int frame = 0;
 int myID = 0;
 int enemyID = 1;
 
-int myCurrentX = 0;
-int myCurrentY = 0;
+//int myCurrentX = 0;
+//int myCurrentY = 0;
 
 double myRotationalSpeed = 0;
 double myWpRotSpeed = 0;
 double myAcceleration = 0;
 const double myRadius = 46;
 
-const int DENSITY_CALCULATE_TIME = 40;
-double* battlefieldDensity;
+//const int DENSITY_CALCULATE_TIME = 40;
+//double* battlefieldDensity;
 
 
-int transformOrder(int ord)
-{
-	if (ord % 3 == 2)
-	{
-		return -1;
-	}
-	else
-	{
-		return ord % 3;
-	}
-}
-
+/*
 void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info)
 {
 	double *nextTenMove = new double[1296];
@@ -107,18 +96,20 @@ void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 	}
 	order.run = (leastIndex % 6) / 2;
 	order.eturn = transformOrder(leastIndex % 6);
-}
+}*/
 
 void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
 	//printf("%i", frame);
-	myCurrentX = int(floor(info.robotInformation[myID].circle.x));
-	myCurrentY = int(floor(info.robotInformation[myID].circle.y));
+	//myCurrentX = int(floor(info.robotInformation[myID].circle.x));
+	//myCurrentY = int(floor(info.robotInformation[myID].circle.y));
 	updatebulletInfo(info, bullet, bulletNum, enemyID);
-	updateBattlefieldDensity(info, myCurrentX, myCurrentY, myID, myRadius, DENSITY_CALCULATE_TIME, bullet, bulletNum, battlefieldDensity);
+	//updateBattlefieldDensity(info, myCurrentX, myCurrentY, myID, myRadius, DENSITY_CALCULATE_TIME, bullet, bulletNum, battlefieldDensity);
 	if (bulletNum > 0)
 	{
-		diskBestOperation(order, info);
+		int ord = ufoHide(bullet, bulletNum, info, myID);
+		order.run = ord % 2;
+		order.eturn = transformOrder(ord);
 	}
 	else
 	{
@@ -141,7 +132,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 
 void RobotAI::ChooseArmor(weapontypename& weapon, enginetypename& engine, bool a)
 {
-	weapon = WT_Cannon;
+	weapon = WT_Machinegun;
 	engine = ET_UFO;
 }
 
@@ -191,13 +182,13 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info, int myID
 	myWpRotSpeed = get_weapon_rotationSpeed(info.robotInformation[myID].weaponTypeName);
 	myAcceleration = get_engine_acceleration(info.robotInformation[myID].engineTypeName);
 
-	battlefieldDensity = new double[DENSITY_CALCULATE_TIME * 620 * 620]; // DENSITY_CALCULATE_TIME * 620 * 620
+	//battlefieldDensity = new double[DENSITY_CALCULATE_TIME * 620 * 620]; // DENSITY_CALCULATE_TIME * 620 * 620
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info, int myID)
 {
 	delete[] bullet;
-	delete[] battlefieldDensity;
+	//delete[] battlefieldDensity;
 }
 
 void RobotAI::onSomeoneFire(int fireID)

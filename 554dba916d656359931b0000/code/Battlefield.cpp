@@ -12,6 +12,7 @@ void updatebulletInfo(const RobotAI_BattlefieldInformation& info, bulletInfo *bu
 			(*(bullet + bulletNum)).y = info.bulletInformation[i].circle.y;
 			(*(bullet + bulletNum)).vx = info.bulletInformation[i].vx;
 			(*(bullet + bulletNum)).vy = info.bulletInformation[i].vy;
+			(*(bullet + bulletNum)).tag = bulletNum;
 			bulletNum++;
 		}
 	}
@@ -72,7 +73,7 @@ void updateBattlefieldDensity(const RobotAI_BattlefieldInformation& info, const 
 
 bool isOutOfMap(const RobotAI_BattlefieldInformation& info, const double x, const double y)
 {
-	if (x < 0 || x > 1366 || y < 0 || y > 1366)
+	if (x < 0 || x > 1366 || y < 0 || y > 680)
 	{
 		return true;
 	}
@@ -84,4 +85,33 @@ bool isOutOfMap(const RobotAI_BattlefieldInformation& info, const double x, cons
 		}
 	}
 	return false;
+}
+
+void bulletUpdate(const RobotAI_BattlefieldInformation& info, const bulletInfo *bullet, const int bulletNum, bulletInfo *bulletNew, int bulletNewNum[], const int updateTimes)
+{
+	for (bulletNewNum[0] = 0; bulletNewNum[0] < bulletNum; bulletNewNum[0]++)
+	{
+		*(bulletNew + bulletNewNum[0]) = *(bullet + bulletNewNum[0]);
+	}
+	for (int time = 1; time < updateTimes; time++)
+	{
+		int deletedBullet = 0;
+		for (int i = 0; i < bulletNewNum[time - 1]; i++)
+		{
+			*(bulletNew + time * 500 + i) = *(bulletNew + (time - 1) * 500 + i);
+			(*(bulletNew + time * 500 + i)).x += (*(bulletNew + time * 500 + i)).vx;
+			(*(bulletNew + time * 500 + i)).y += (*(bulletNew + time * 500 + i)).vy;
+
+			if (isOutOfMap(info, (*(bulletNew + time * 500 + i)).x, (*(bulletNew + time * 500 + i)).y))
+			{
+				deletedBullet++;
+			}
+			else
+			{
+				*(bulletNew + time * 500 + i - deletedBullet) = *(bulletNew + time * 500 + i);
+			}
+		}
+
+		bulletNewNum[time] = bulletNewNum[time - 1] - deletedBullet;
+	}
 }

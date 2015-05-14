@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RobotAI_Interface.h"
+double howfar(double x, double y, double x1, double y1);
 double tAngle(double angle1, double angle2);
 double getAngle(Circle a, Circle b);
 int turnfire(double radfire, double radother, double radins, bool&state);

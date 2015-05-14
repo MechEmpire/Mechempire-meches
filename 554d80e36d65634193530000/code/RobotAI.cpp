@@ -4,7 +4,10 @@
 #define Rright (order.run =2)
 #define Rup (order.run =3)
 #define Rdown (order.run =4)
-
+double howfar(double x, double y, double x1, double y1)
+{
+	return sqrt(pow(x-x1,2) + pow(y-y1,2));
+}
 double tAngle(double angle1, double angle2)
 {
 	double a;
@@ -142,14 +145,159 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
 
 	double radfire = info.robotInformation[myID].weaponRotation;
-	Circle mypoint = info.robotInformation[myID].circle;
+	Circle m = info.robotInformation[myID].circle;
 	Circle otherpoint = info.robotInformation[1 - myID].circle;
-	controlfire(mypoint, otherpoint, radfire, order.fire, order.wturn);
-	order.run = 1;
+	controlfire(m, otherpoint, radfire, order.fire, order.wturn);
+	RobotAI_BulletInformation a[200];
+	for (int i = 0; i < info.num_bullet; ++i)
+		a[i] = info.bulletInformation[i];
+	//system("pause");
+	//cout << get_engine_rotationSpeed(ET_GhostTank);
+	//cout << get_engine_maxSpeed(ET_GhostTank);
+	//cout << get_engine_acceleration(ET_GhostTank);
+	/*cout << mypoint.x << '\n' << mypoint.y << '\n';
+	cout 
+		//<< info.robotInformation[0].cooling << '\n' 
+		
+		
+		<< info.robotInformation[0].engineRotation
+	//	<< '\n' << info.robotInformation[0].engineTypeName << '\n' 
+	//	<< info.robotInformation[0].hp
+	//	<< '\n' << info.robotInformation[0].id << '\n'
+	//
+
+	//<< info.robotInformation[0].remainingAmmo
+
+		<< '\n' << info.robotInformation[0].vr << '\n'
+		<< info.robotInformation[0].vx
+		<< '\n' << info.robotInformation[0].vy << '\n'
+		<< info.robotInformation[0].weaponRotation
+		<< '\n' << '\n';
+/*	for (int i = 0; i < info.num_bullet; ++i)
+	{
+		cout << i << '\n' << a[i].circle.x << '\n' << a[i].circle.y << '\n' << a[i].launcherID << '\n' << a[i].rotation
+			<< '\n' << a[i].vx << '\n' << a[i].vy << '\n' << a[i].circle.r
+			<< '\n' << a[i].vr << '\n' << a[i].type
+			<< '\n' << '\n';
+	}*/
+	if (myID == 0)
+	{
+		static int b[2] = { 1, 0 };
+		static int bb[200] = { 0 };
+		if (b[0] == 1 && b[1] == 0)
+			Rright;
+		if (b[0] == 0 && b[1] == 0)
+			Rleft;
+		if (b[0] == 1 && b[1] == 1)
+			Rdown;
+		if (b[0] == 0 && b[1] == 1)
+			Rup;
+		if (m.x < 175 && order.run == 1){ b[1] = 1; b[0] = 1; }
+		if (m.y < 125 && order.run == 3){ b[1] = 0; b[0] = 1; }
+		//if (info.robotInformation[myID].cooling > 68){ b[0] = 0; }
+		for (int i = 0; i < info.num_bullet; ++i)
+		{
+			if (a[i].launcherID == 1 - myID)
+			{
+
+				Beam A = { a[i].circle.x, a[i].circle.y, a[i].rotation };
+				Circle B = { 300, 250, 75 };
+				if (a[i].type != WT_MissileLauncher)
+				{
+					if (HitTestBeamCircle(A, B) == true)continue;
+				}
+				double c;
+				c = howfar(A.x, A.y, m.x, m.y);
+				if (c < 275)
+				{
+					//cout << c << '\n' << howfar(A.x, A.y, m.x - 4, m.y) << '\n';
+					if (bb[i] == 0 && order.run == 2 && howfar(A.x, A.y, m.x - 4, m.y) > c)
+					{
+						b[0] = 0;
+						bb[i] = 1;
+					}
+					if (bb[i] == 0 && order.run == 4 && howfar(A.x, A.y, m.x, m.y - 4) > c)
+					{
+						b[0] = 0;
+						bb[i] = 1;
+					}
+					break;
+				}
+				else
+					bb[i] = 0;
+			}
+		}
+		if (m.x > 425 || m.y > 375) b[0] = 0;
+	}
+	else
+	{
+		static int b[2] = { 1, 0 };
+		static int bb[200] = { 0 };
+		if (b[0] == 1 && b[1] == 0)
+			Rleft;
+		if (b[0] == 0 && b[1] == 0)
+			Rright;
+		if (b[0] == 1 && b[1] == 1)
+			Rup;
+		if (b[0] == 0 && b[1] == 1)
+			Rdown;
+		if (m.x > 1191 && order.run == 2){ b[1] = 1; b[0] = 1; }
+		if (m.y > 555 && order.run == 4){ b[1] = 0; b[0] = 1; }
+	//	if (info.robotInformation[myID].cooling > 68){ b[0] = 0; }
+		for (int i = 0; i < info.num_bullet; ++i)
+		{
+			if (a[i].launcherID == 1 - myID)
+			{
+
+				Beam A = { a[i].circle.x, a[i].circle.y, a[i].rotation };
+				Circle B = { 1066, 430, 75 };
+				if (a[i].type != WT_MissileLauncher)
+				{
+					if (HitTestBeamCircle(A, B) == true)continue;
+				}
+				double c;
+				c = howfar(A.x, A.y, m.x, m.y);
+				if (c < 275)
+				{
+					//cout << c << '\n' << howfar(A.x, A.y, m.x - 4, m.y) << '\n';
+					if (bb[i] == 0 && order.run == 1 && howfar(A.x, A.y, m.x + 4, m.y) > c)
+					{
+						b[0] = 0;
+						bb[i] = 1;
+					}
+					if (bb[i] == 0 && order.run == 3 && howfar(A.x, A.y, m.x, m.y + 4) > c)
+					{
+						b[0] = 0;
+						bb[i] = 1;
+					}
+					break;
+				}
+				else
+					bb[i] = 0;
+			}
+		}
+		
+		if (m.x < 941 || m.y <305) b[0] = 0;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
 	
 	
 		
 }
+
+
 
 
 
@@ -164,7 +312,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
 	weapon = WT_Prism;	//啊，我爱
-	engine = ET_Shuttle;	//啊，我爱蜘蛛
+	engine = ET_Spider;	//啊，我爱
 }
 
 
@@ -185,7 +333,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "徳玛西亚";
+	return "";
 }
 
 string RobotAI::GetAuthor()
@@ -202,17 +350,17 @@ string RobotAI::GetAuthor()
 int RobotAI::GetWeaponRed()
 {
 	//返回一个-255-255之间的整数,代表武器红色的偏移值
-	return 60;
+	return -179;
 }
 int RobotAI::GetWeaponGreen()
 {
 	//返回一个-255-255之间的整数,代表武器绿色的偏移值
-	return 75;
+	return 10;
 }
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return -115;
+	return 209;
 }
 
 
@@ -222,17 +370,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return 85;
+	return 32;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return -70;
+	return 231;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return -65;
+	return 220;
 }
 
 
