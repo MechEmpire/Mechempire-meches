@@ -152,6 +152,6 @@ public:
 	//	map<int, bulletRecorded> Bullets;//used to record them
 		void goal(const RobotAI_BattlefieldInformation& info,int myID);
 		int previewNum;
-
-
+		int xOb1, xOb2, yOb1, yOb2, obr;
+		int superAttack, lastX, lastY;//record the position of the opponent last time
 };

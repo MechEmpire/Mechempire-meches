@@ -1,9 +1,5 @@
 ﻿#include "RobotAI.h"
-#include<cmath>
-double pointdis(const Circle a1, const Circle a2, const Circle a3);
-double dis(double x1, double y1, double x2, double y2);
-double dis(const Circle& a, const Circle& b);
-double abvalue(double x);
+
 RobotAI::RobotAI()
 {
 	
@@ -296,30 +292,34 @@ void RobotAI::onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation
 	}
 }
 
-double pointdis(double x1, double y1, double x2, double y2, double x3, double y3)
+double RobotAI::pointdis(double x1, double y1, double x2, double y2, double x3, double y3)
 {
 	double A = (y2 - y1) / (x2 - x1);
 	double B = -1.0;
 	double C = y1 - (y2 - y1)*x1 / (x2 - x1);
 	double son = A*x3 + B*y3 + C;
-	return abvalue(son / sqrt(A*A + B*B));
+	double Abvalue = son / sqrt(A*A + B*B);
+	if (Abvalue > 0)
+		return Abvalue;
+	else
+		return -Abvalue;
 }
 
-double pointdis(const Circle a1,const Circle a2, const Circle a3)
+double RobotAI::pointdis(const Circle a1, const Circle a2, const Circle a3)
 {
 	return pointdis(a1.x, a1.y, a2.x, a2.y, a3.x, a3.y);
 }
 
 
-double dis(double x1, double y1, double x2, double y2) {
+double RobotAI::dis(double x1, double y1, double x2, double y2) {
 	return sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
 }
 
-double dis(const Circle& a, const Circle& b){
+double RobotAI::dis(const Circle& a, const Circle& b){
 	return dis(a.x, a.y, b.x, b.y);
 }
 
-double abvalue(double x)
+double RobotAI::abvalue(double x)
 {
 	if (x >= 0)
 		return x;

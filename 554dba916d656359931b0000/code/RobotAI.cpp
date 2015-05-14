@@ -103,7 +103,7 @@ void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 	delete[] nextTenMove;
 	if (abs(leastVal - 0) > 0.00001)
 	{
-		printf("Frame %i: Will be hit: %f\n", frame, leastVal);
+		//printf("Frame %i: Will be hit: %f\n", frame, leastVal);
 	}
 	order.run = (leastIndex % 6) / 2;
 	order.eturn = transformOrder(leastIndex % 6);
@@ -127,8 +127,8 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	}
 	order.wturn = aiming(info, info.robotInformation[enemyID].circle.x, info.robotInformation[enemyID].circle.y, myID, myWpRotSpeed);
 	int firePower = fractionHit(info, info.robotInformation[myID].circle.x, info.robotInformation[myID].circle.y, 95, info.robotInformation[myID].weaponRotation, 5, 46, info.robotInformation[enemyID].circle.x, info.robotInformation[enemyID].circle.y);
-	printf("Frame: %i. Firepower %i\n", frame, firePower);
-	if (firePower % 100 > 30)
+	//printf("Frame: %i. Firepower %i\n", frame, firePower);
+	if (firePower % 100 > 50)
 	{
 		order.fire = 1;
 	}
@@ -207,5 +207,5 @@ void RobotAI::onSomeoneFire(int fireID)
 
 void RobotAI::onHit(int launcherID, bullettypename btn)
 {
-	printf("Frame: %i hit\n", frame);
+	//printf("Frame: %i hit\n", frame);
 }

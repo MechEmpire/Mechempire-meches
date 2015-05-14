@@ -1,5 +1,6 @@
 ﻿#include "RobotAI.h"
-
+  static int x=0;
+  static int countt=0;
 RobotAI::RobotAI()
 {
 
@@ -31,12 +32,77 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  auto& me = info.robotInformation[myID];
+ auto& me = info.robotInformation[myID];
   auto& target = info.robotInformation[1 - myID];
   static double mcx = me.circle.x;
   static double mcy = me.circle.y;
   static double tcx = target.circle.x;
   static double tcy = target.circle.y;
+  double dis0 = distance(me.circle.x, me.circle.y, 300, 250);
+  double dis1 = distance(me.circle.x, me.circle.y, 1066, 430);
+  double jdu1= atan2( - me.circle.y, tcx- me.circle.x)*180.0 / PI;
+  
+   if(distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<210)
+  {
+    order.fire = 1;
+	order.fire = 1;
+	order.fire = 1;
+	order.fire = 1;
+  }
+
+ if(x==0)
+ {
+  if(dis0<dis1)//冲向上边的障碍物
+  {
+	  order.run=1;
+	  countt++;
+	  jdu1=atan2(175-me.circle.y, 50-me.circle.x)*180.0 / PI;
+	 order.run=1;
+  double going1=jdu1-me.engineRotation;   //引擎角度判别
+	 order.run=1;
+  AngleAdjust(going1);
+	  if(going1>2.00){
+		  order.run=1;
+		  order.eturn=1;
+	  }
+	  else if(going1<-2.00){
+
+		  order.run=1;
+		  order.eturn=-1;
+	  }
+	  if(-20<me.circle.y-170&&me.circle.y-170<20)
+		  x++;
+  }
+  if(countt==0) //冲向下边的障碍物
+  {
+	double jdu2=atan2(430-me.circle.y, 1316- me.circle.x)*180.0 / PI;
+	order.run=1;
+	double going2=jdu2-me.engineRotation;   //引擎角度判别
+	 order.run=1;
+  AngleAdjust(going2);
+	  if(going2>2.00){
+		  order.run=1;
+		  order.eturn=1;
+	  }
+	  else if(going2<-2.00){
+
+		  order.run=1;
+		  order.eturn=-1;
+	  }
+	  if(-20<me.circle.y-430&&me.circle.y-430<20)
+		  x++;
+  }
+ }
+
+  if(distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<210)
+  {
+    order.fire = 1;
+	order.fire = 1;
+	order.fire = 1;
+	order.fire = 1;
+	order.fire = 1;
+  }
+
   order.run=1;
   mcx = me.circle.x;
   mcy = me.circle.y;
@@ -44,8 +110,10 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
   tcy = target.circle.y;
   double emdistance = distance(me.circle.x, me.circle.y, target.circle.x, target.circle.y);
   double jdu= atan2(tcy - me.circle.y, tcx- me.circle.x)*180.0 / PI;
+
   //distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<300)//狂追猛操
-  
+  if(x!=0)
+  {
 	 order.run=1;
   double yqin=me.engineRotation;//引擎角度 单位为度
 	 order.run=1;
@@ -57,12 +125,11 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		  order.eturn=1;
 	  }
 	  else if(going<-2.00){
+
 		  order.run=1;
 		  order.eturn=-1;
 	  }
-
-
-  
+  }
   double wp=me.weaponRotation;//武器角度 单位为度
   double wq=jdu-wp;//武器角度判别
   AngleAdjust(wq);
@@ -72,7 +139,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
   else if (wq<-3.00) {
     order.wturn = -1;
   } 
-  if(distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<130)
+  if(distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<200)
   {
     order.fire = 1;
   }
@@ -93,7 +160,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
 	weapon = WT_ElectricSaw   ;	//啊，我爱大电锯
-	engine = ET_GhostTank    ;	//啊，我爱幽灵坦克
+	engine = ET_GhostTank ;	//啊，我爱幽灵坦克
 }
 
 

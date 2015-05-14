@@ -3,6 +3,7 @@
 #include "algorithm"
 #include "fstream"
 #include <iostream>
+#include <queue>
 using namespace std;
 RobotAI::RobotAI()
 {
@@ -18,7 +19,7 @@ RobotAI::~RobotAI()
 #define min(a,b) a<b?a:b
 ofstream fout("h:\\test.txt");
 Circle lastPlace[2];//上一帧的位置，0是我，1是敌人
-
+queue<Circle> queue_lastFivePoint;//用于记录前五帧敌人的位置
 //-----------------------------------------------------
 //1.必须完成的战斗核心
 //-----------------------------------------------------
@@ -62,7 +63,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	if(info.robotInformation[myID].remainingAmmo <= 1 )
 	{
 		//没子弹了就去仓库领取
-		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1], me.circle),me.engineRotation);
+		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1],
+			me.circle),me.engineRotation);
 	}
 
 	//等等！有子弹再打我？
@@ -85,16 +87,16 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//打猥琐飞弹和光棱和磁暴只要贴脸干！其他的要远离，尤其是电锯！
 	if(armor.weaponTypeName != WT_MissileLauncher && armor.weaponTypeName !=WT_Prism && armor.weaponTypeName !=WT_Tesla){
 		if(distance_me_armor <= min_dist)//太近了就往回走
-		order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
+			order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
 	}
 	//遇到障碍物？
 	if(avoidObstacleAFV(me.circle, obs, info.num_obstacle))
 		order.eturn = -1;
 	
 	
-	
-	lastPlace[0] = info.robotInformation[myID].circle;
-	lastPlace[1] = info.robotInformation[1-myID].circle;
+	if(queue_lastFivePoint.size() >= 5)//仅保存5个点
+		queue_lastFivePoint.pop();
+	queue_lastFivePoint.push(armor.circle);
 }
 
 
@@ -199,8 +201,9 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 	//一场战斗开始时被调用，可能可以用来初始化
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
-	lastPlace[0] = info.robotInformation[myID].circle;
-	lastPlace[1] = info.robotInformation[1-myID].circle;
+	//lastPlace[0] = info.robotInformation[myID].circle;
+	//lastPlace[1] = info.robotInformation[1-myID].circle;
+	queue_lastFivePoint.push(info.robotInformation[1-myID].circle);
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID)
@@ -264,7 +267,6 @@ int RobotAI::runAndrun(Circle me,Circle armor, Circle obstacle[], int num_obs){
 int RobotAI::runAndrunAFV(Circle me,Circle armor,double engine_rotation)
 {
 	double an = atan2(armor.y - me.y, armor.x - me.x) * 180 / PI;	
-	
 	return Rotate(an,engine_rotation);
 	
 }
@@ -358,8 +360,9 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 	double angle = atan2(armor.y - me.y, armor.x - me.x) * 180 / PI;//我和敌人之间的角度
 	double v1Angle;//敌人速度方向
 	double offset = 0;//这是偏移角
-	
-	if( lastPlace[1].x != armor.x || lastPlace[1].y != armor.y)//当敌人运动的时候计算偏移角
+	double armor_move = Distance(queue_lastFivePoint.front().x, queue_lastFivePoint.front().y,
+		queue_lastFivePoint.back().x, queue_lastFivePoint.back().y);//敌人前5帧运动的长度	
+	if( armor_move > 6)//当敌人运动的时候计算偏移角
 	{
 		double v1 = Distance(vx, vy, 0, 0);//计算armorSpeed速度也可以套用distance函数
 		double v2 = 11.0;//加农炮射速11
@@ -403,7 +406,7 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 //何时开炮？有障碍物的时候要节约子弹哦
 int RobotAI::doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle)
 {
-	if( abs(now_angle - fire_angle) > 5 )//角度太偏就不射
+	if( abs(now_angle - fire_angle) > 10 )//角度太偏就不射
 		return 0;
 	double A,C,dis;
 	Circle obs;

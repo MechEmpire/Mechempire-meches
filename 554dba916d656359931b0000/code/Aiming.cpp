@@ -38,8 +38,13 @@ int fractionHit(const RobotAI_BattlefieldInformation& info, double myX, double m
 
 	for (int i = 0; i < 2; i++)
 	{
+		if (sqrt((info.obstacle[i].y - startY) * (info.obstacle[i].y - startY) + (info.obstacle[i].x - startX) * (info.obstacle[i].x - startX)) <= info.obstacle[i].r)
+		{
+			return 10000;
+		}
 		double angle = RadianToAngle(atan2((info.obstacle[i].y - startY), (info.obstacle[i].x - startX)));
-		double dAngle = RadianToAngle(atan2(info.obstacle[i].r, sqrt(pow(info.obstacle[i].y - startY, 2) + pow(info.obstacle[i].x - startX, 2))));
+		double dAngle = RadianToAngle(asin(info.obstacle[i].r / sqrt((info.obstacle[i].y - startY) * (info.obstacle[i].y - startY) + (info.obstacle[i].x - startX) * (info.obstacle[i].x - startX))));
+
 		minAngleList[i] = angle - dAngle;
 		maxAngleList[i] = angle + dAngle;
 
@@ -59,7 +64,7 @@ int fractionHit(const RobotAI_BattlefieldInformation& info, double myX, double m
 	double dObjAngle = RadianToAngle(atan2(enemyRadius, sqrt(pow((enemyY - startY), 2) + pow(enemyX - startX, 2))));
 	minAngleList[2] = objAngle - dObjAngle;
 	maxAngleList[2] = objAngle + dObjAngle;
-	
+
 	for (int i = 0; i < 3; i++)
 	{
 		if (minAngleList[i] < minAngle - 180)
@@ -98,10 +103,8 @@ int fractionHit(const RobotAI_BattlefieldInformation& info, double myX, double m
 			minAngleList[i] = 0;
 		}
 	}
-	//printf("%f, %f\n", maxAngleList[2], maxAngleList[2]);
-
 	double blockedAngle[2][2];
-	
+
 	for (int i = 0; i < 2; i++)
 	{
 		blockedAngle[i][0] = minAngleList[i];
@@ -141,7 +144,7 @@ int fractionHit(const RobotAI_BattlefieldInformation& info, double myX, double m
 			maxAngleList[2] = blockedAngle[i][0];
 		}
 	}
-	
+
 	if (maxAngleList[2] < minAngleList[2])
 	{
 		maxAngleList[2] = minAngleList[2];
@@ -152,7 +155,7 @@ int fractionHit(const RobotAI_BattlefieldInformation& info, double myX, double m
 	{
 		ratioHit--;
 	}
-	return (ratioBlocked) * 100 + ratioHit;
+	return (ratioBlocked)* 100 + ratioHit;
 }
 
 void forecastPosition(const RobotAI_BattlefieldInformation& info, int myID)

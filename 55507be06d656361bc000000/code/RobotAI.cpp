@@ -253,7 +253,8 @@ void RobotAI:: detectBullet(const RobotAI_BattlefieldInformation& info, int myID
 		if (y < 0) y = 0;
 		if (x >= length) x = length - 1;
 		if (y >= width) y = width - 1;
-		matrix[x][y] = -10;
+		matrix[x][y] += -100;
+		//detect your opponent and set forbidden area as well
 	//	cout << i << "bullet" << matrix[x][y]<<" ";
 		/*		int xup = ceil(x), xdown = floor(x), yup = ceil(y), ydown = floor(y);
 				if (xup >= length) xup = length - 1;
@@ -264,7 +265,6 @@ void RobotAI:: detectBullet(const RobotAI_BattlefieldInformation& info, int myID
 				matrix[xup][ydown] = -10;
 				matrix[xdown][yup] = -10;
 				matrix[xdown][ydown] = -10;*/
-	//	TRACE("matrix done");
 		//}
 	}
 }
@@ -281,117 +281,182 @@ int RobotAI::check(int xUp,int xDown,int yUp,int yDown)
 		{
 			if (j < 0) continue;
 			if (j >= length) break;
-			result += matrix[i][j];
+			if (matrix[i][j]>Min)
+				result += matrix[i][j];
+			else
+			{
+				if ((i <= xOb1 + obr&&i >= xOb1 - obr&&j <= yOb1 + obr&&j >= yOb1 - obr) || (i <= xOb2 + obr&&i >= xOb2 - obr&&j <= yOb2 + obr&&j >= yOb2 - obr))
+				{
+					result += matrix[i][j];
+				}
+			}
+			//if (yDown <= 60 && matrix[i][j] != 0)
+			//	cout << matrix[i][j] << " ";
 		}
 	}
 	return result;
 }
 void RobotAI::goal(const RobotAI_BattlefieldInformation& info,int myID)
 {
+	
+	int triggerNum = 1;
 	int xGoal = info.arsenal[0].circle.x;
 	int yGoal = info.arsenal[0].circle.y;
 	int xNow = info.robotInformation[myID].circle.x;
 	int yNow = info.robotInformation[myID].circle.y;
-	if (info.arsenal[0].respawning_time > 10 || (abs(info.robotInformation[(myID + 1) % 2].circle.x - xGoal) + abs(info.robotInformation[(myID + 1) % 2].circle.y-yGoal)<50))
+	int xE = info.robotInformation[(myID + 1) % 2].circle.x;
+	int yE = info.robotInformation[(myID + 1) % 2].circle.y;
+	if (yE == lastY&&xE == lastX)
 	{
-		xGoal = info.arsenal[1].circle.x;
-		yGoal = info.arsenal[1].circle.y;
+		superAttack++;
 	}
-	if (info.robotInformation[myID].remainingAmmo >= 2)
+	lastX = xE; lastY = yE;
+	if (superAttack > 60)
 	{
-		if (info.robotInformation[myID].cooling <= 0)
+		xGoal = xE; yGoal = yE;
+	
+		//cout << "Attack!!" << " ";
+		if (abs(xE - xNow) + abs(yE + yNow) <= 1000)
 		{
-			cout << "Attack" << " ";
-			int xO = info.robotInformation[(myID + 1) % 2].circle.x;
-			int yO = info.robotInformation[(myID + 1) % 2].circle.y;
-			double k1 = (yO - yNow) / (double)(xO - xNow);
-			double b1 = yNow - k1*xNow;
-			int tempY = k1 * 300 + b1;
-			if (xO != xNow&&tempY <= 250 + 75 && tempY >= 250 - 75)
-			{
-				if (tempY < 250)
-				{
-					xGoal = xNow; yGoal = 50;
-				}
-				else
-				{
-					xGoal = xNow; yGoal = width- 50;
-				}
-			}
-			tempY = k1 * 1066 + b1;
-			if (xO != xNow&&tempY <= 430 + 75 && tempY >= 430 - 75)
-			{
-				if (tempY < 430)
-				{
-					xGoal = xNow; yGoal = 50;
-				}
-				else
-				{
-					xGoal = xNow; yGoal = width - 50;
-				}
-			}
-			cout << xGoal << " " << yGoal << " ";
+			//run
+		//	cout << "run" << endl;
+			//special judgement here in case trapped at the corner
+			xGoal = xNow + (xNow - xE);
+			yGoal = yNow + (yNow - yE);
+			if (xGoal < 0) xGoal = 0;
+			if (xGoal >= length) xGoal = length - 1;
+			if (yGoal<0) yGoal = 0;
+			if (yGoal >= width) yGoal = width - 1;
+			superAttack = 0;
+		}
+	}
+	else
+	{
+		if (abs(xE - xNow) + abs(yE + yNow) <= 1000)
+		{
+			//run
+			//special judgement here in case trapped at the corner
+		//	cout << "run,too" << endl;
+			xGoal = xNow + (xNow - xE);
+			yGoal = yNow + (yNow - yE);
+			if (xGoal < 0) xGoal = 0;
+			if (xGoal >= length) xGoal = length - 1;
+			if (yGoal<0) yGoal = 0;
+			if (yGoal >= width) yGoal = width - 1;
+			superAttack = 0;
 		}
 		else
 		{
-			cout << "defend" << " ";
-			int obstacleX1 = 300, obstacleY1 = 250;
-			int obstacleX2 = 1066, obstacleY2 = 430;
-			int move1,move2;
-			int x1, y1, x2, y2;
-			int xO = info.robotInformation[(myID + 1) % 2].circle.x;
-			int yO = info.robotInformation[(myID + 1) % 2].circle.y;
-			double kt = (yO - obstacleY1) / (double)(xO - obstacleX1);
-			double bt = yO - kt*xO;
-			//doesn't consider the time when they are in a vertical line! could be improved later
-			//doesn't consider what if the way is cut down by the obstacle,either
-			if (abs(xO - xNow) < abs(xNow - obstacleX1))
+			if (info.arsenal[0].respawning_time > 10 || (abs(info.robotInformation[(myID + 1) % 2].circle.x - xGoal) + abs(info.robotInformation[(myID + 1) % 2].circle.y - yGoal) < 100))
 			{
-				y1 = yNow; x1 = (y1 - bt) / kt;
-				move1 = abs(x1 - xNow);
-				if (x1>=length)
-					move1 = 10000;
-			}
-			else
-			{
-				x1 = xNow; y1 = kt*x1 + bt;
-				move1 = abs(y1 - yNow);
-				if (y1 >= width)
-					move1 = 10000;
-			}
-			kt = (yO - obstacleY2) / (double)(xO - obstacleX2);
-			bt = yO - kt*xO;
-			if (abs(xO - xNow) < abs(xNow - obstacleX2))
-			{
-				y2 = yNow; x2 = (y2 - bt) / kt;
 
-				move2 = abs(x2 - xNow);
-				if (x2 >= length)
-					move2 = 10000;
+				xGoal = info.arsenal[1].circle.x;
+				yGoal = info.arsenal[1].circle.y;
+				if (abs(xE - xGoal) + abs(yE - yGoal) <= 100)
+				{
+					xGoal = info.arsenal[0].circle.x;
+					yGoal = info.arsenal[0].circle.y;
+				}
 			}
-			else
+
+
+			if (info.robotInformation[myID].remainingAmmo >= 2)
 			{
-				x2 = xNow; y2 = kt*x2 + bt;
-				move2 = abs(y2 - yNow);
-				if (y2 >= width)
-					move2 = 10000;
+				if (info.robotInformation[myID].cooling <= 0)
+				{
+					//		cout << "Attack" << " ";
+					triggerNum = 2;
+					int xO = info.robotInformation[(myID + 1) % 2].circle.x;
+					int yO = info.robotInformation[(myID + 1) % 2].circle.y;
+					double k1 = (yO - yNow) / (double)(xO - xNow);
+					double b1 = yNow - k1*xNow;
+					int tempY = k1 * 300 + b1;
+					if (xO != xNow&&tempY <= 250 + 75 && tempY >= 250 - 75)
+					{
+						if (tempY < 250)
+						{
+							xGoal = xNow; yGoal = 50;
+						}
+						else
+						{
+							xGoal = xNow; yGoal = width - 50;
+						}
+					}
+					tempY = k1 * 1066 + b1;
+					if (xO != xNow&&tempY <= 430 + 75 && tempY >= 430 - 75)
+					{
+						if (tempY < 430)
+						{
+							xGoal = xNow; yGoal = 50;
+						}
+						else
+						{
+							xGoal = xNow; yGoal = width - 50;
+						}
+					}
+					//		cout << xGoal << " " << yGoal << " ";
+				}
+				else
+				{
+					//			cout << "defend" << " ";
+					triggerNum = 1;
+					int obstacleX1 = 300, obstacleY1 = 250;
+					int obstacleX2 = 1066, obstacleY2 = 430;
+					int move1, move2;
+					int x1, y1, x2, y2;
+					int xO = info.robotInformation[(myID + 1) % 2].circle.x;
+					int yO = info.robotInformation[(myID + 1) % 2].circle.y;
+					double kt = (yO - obstacleY1) / (double)(xO - obstacleX1);
+					double bt = yO - kt*xO;
+					//doesn't consider the time when they are in a vertical line! could be improved later
+					//doesn't consider what if the way is cut down by the obstacle,either
+					if (abs(xO - xNow) < abs(xNow - obstacleX1))
+					{
+						y1 = yNow; x1 = (y1 - bt) / kt;
+						move1 = abs(x1 - xNow);
+						if (x1 >= length)
+							move1 = 10000;
+					}
+					else
+					{
+						x1 = xNow; y1 = kt*x1 + bt;
+						move1 = abs(y1 - yNow);
+						if (y1 >= width)
+							move1 = 10000;
+					}
+					kt = (yO - obstacleY2) / (double)(xO - obstacleX2);
+					bt = yO - kt*xO;
+					if (abs(xO - xNow) < abs(xNow - obstacleX2))
+					{
+						y2 = yNow; x2 = (y2 - bt) / kt;
+
+						move2 = abs(x2 - xNow);
+						if (x2 >= length)
+							move2 = 10000;
+					}
+					else
+					{
+						x2 = xNow; y2 = kt*x2 + bt;
+						move2 = abs(y2 - yNow);
+						if (y2 >= width)
+							move2 = 10000;
+					}
+					if (move1 < move2)
+					{
+						xGoal = x1; yGoal = y1;
+						//       cout << "move1 " << move1 << " ";
+					}
+					else
+					{
+						xGoal = x2; yGoal = y2;
+						//		cout << "move2" << move2 << " ";
+					}
+					//	cout << xGoal << " " << yGoal << endl;
+				}
 			}
-			if (move1<move2)
-			{
-				xGoal = x1; yGoal = y1;
-				cout << "move1 " << move1 << " ";
-			}
-			else
-			{
-				xGoal = x2; yGoal = y2;
-		//		cout << "move2" << move2 << " ";
-			}
-		//	cout << xGoal << " " << yGoal << " ";
 		}
-	}
-
-	
 		
+	}
 		double k = (yGoal - yNow) / (double)(xGoal - xNow);
 		double b = yNow - k*(xNow);
 		//	cout << k << " " << b << endl;
@@ -409,16 +474,17 @@ void RobotAI::goal(const RobotAI_BattlefieldInformation& info,int myID)
 				if (x >= length) x = length - 1;
 				if (y >= width) y = width - 1;
 			//	cout << x << " " << y << endl;
-				matrix[x][y] = 20;
+				matrix[x][y] += triggerNum;
 			}
 			else
 			{
 				if (yGoal>yNow)
-					matrix[xNow][yNow + i] = 20;
+					matrix[xNow][yNow + i] += triggerNum;
 				else
-					matrix[xNow][yNow - i] = 20;
+					matrix[xNow][yNow - i] += triggerNum;
 			}
 		}
+		
 	
 }
 RobotAI::RobotAI()
@@ -454,7 +520,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	Beam shootLine;
 	shootLine.x = info.robotInformation[myID].circle.x;
 	shootLine.y = info.robotInformation[myID].circle.y;
-	shootLine.rotation = temp;
+	shootLine.rotation = info.robotInformation[myID].weaponRotation;
 	if (willShoot(info, myID, shootLine, p.x)) order.fire = 1;
 	else order.fire = 0;
 	if (start) order.fire = 0;
@@ -463,7 +529,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//aim function
 	int xNow = info.robotInformation[myID].circle.x;
 	int yNow = info.robotInformation[myID].circle.y;
-	int r = info.robotInformation[myID].circle.r;
+	int r = info.robotInformation[myID].circle.r+5;
 	for (int i = 0; i < length;i++)
 	for (int j = 0; j < width; j++)
 		matrix[i][j] = 0;
@@ -471,23 +537,29 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	goal(info, myID);
 	int checkRec[5];
 	//left right up down
+
 	checkRec[1] = check(xNow - r - previewNum, xNow,yNow-r,yNow+r);
-//	cout << checkRec[1] << " ";
+
 	checkRec[2] = check(xNow, xNow + r + previewNum, yNow - r, yNow + r);
-//	cout << checkRec[2] << " ";
+
 	checkRec[3] = check(xNow - r, xNow + r, yNow-r-previewNum,yNow);
-//	cout << checkRec[3] << " ";
+
 	checkRec[4] = check(xNow - r, xNow + r, yNow, yNow + r + previewNum);
-//	cout << checkRec[4] << " "<<endl;
+	//y left equals to right!?
 //	cout << endl;
-	if (xNow == 50)
-		checkRec[1] -= checkRec[2];
+	if (xNow <= 55)
+		checkRec[1] = Min;
 	if (xNow >= length - 55)
-		checkRec[2] -= checkRec[1];
+		checkRec[2] = Min;
 	if (yNow <= 55)
-		checkRec[3] -= checkRec[4];
+		checkRec[3] = Min;
 	if (yNow >= width - 55)
-		checkRec[4] -= checkRec[3];
+		checkRec[4] = Min;
+//		cout << checkRec[1] << " ";
+//		cout << checkRec[2] << " ";
+//		cout << checkRec[3] << " ";
+//		cout << checkRec[4] << " "<<endl;
+	//cout << endl;
 	int Ma = Min, rec = 0;
 	for (int i = 1; i <= 4; i++)
 	if (checkRec[i] > Ma)
@@ -632,6 +704,12 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 		t = 5; break;
 	}
 	previewNum = 10 * t;
+	xOb1 = info.obstacle[0].x;
+	xOb2 = info.obstacle[1].x;
+	yOb1 = info.obstacle[0].y;
+	yOb2 = info.obstacle[1].y;
+	obr = info.obstacle[0].r;
+	superAttack = 0;
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID)
@@ -639,7 +717,7 @@ void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID)
 	//一场战斗结束时被调用，可能可以用来析构你动态分配的内存空间（如果你用了的话）
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
-	system("pause");
+	//system("pause");
 }
 
 

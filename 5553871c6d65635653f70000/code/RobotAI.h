@@ -8,12 +8,8 @@ class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
-	int MyCar = 0;
-	enum{
-		AFV_Esaw ,
-		AFV_Prism ,
-		AFV_WT_Machinegun
-	};
+
+
 public:
 
 	//************************************************
@@ -34,7 +30,8 @@ public:
 	//		info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
-	virtual void Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID);
+	virtual void Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+	
 
 
 
@@ -45,9 +42,8 @@ public:
 	//tip:	括号里的参数是枚举类型 weapontypename 或 enginetypename
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
-	virtual void ChooseArmor(weapontypename& weapon,enginetypename& engine,bool);
-
-
+	virtual void ChooseArmor(weapontypename& weapon, enginetypename& engine, bool);
+	
 	//-----------------------------------------------------
 
 
@@ -61,10 +57,10 @@ public:
 
 	//返回你的机甲的名字
 	virtual string GetName();
-
+	
 	//返回机甲制作人或团队的名字
 	virtual string GetAuthor();
-
+	
 
 
 	//返回一个(-255,255)之间的机甲武器炮塔的颜色偏移值（红、绿、蓝）
@@ -121,29 +117,10 @@ public:
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
 
-	bool HaveBarrier(const RobotAI_BattlefieldInformation& info,const int myID,const int ArID);//判断和地方之间是否有障碍物
-	int GetNearetBul(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//获取最近的子弹下标
-
-	/*<<<<<<<对每个机甲适应的部分(多个重载函数时，最下方为适应函数)*/
-	void onTag1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//瞄准函数（不带预判）
-	double onTagRota(const RobotAI_BattlefieldInformation& info, const int myID);//返回武器夹角和与对面方向的夹角差
-
-	void onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID,const Circle circle_tag);//移动到(circle_tag.x,circle_tag.y）的函数
-	void onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const double x_tag, const double y_tag);//移动到(x_tag,y_tag)的函数
-	void onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const double rota_tag);//向rota_tag（角度）移动
-	
-	void onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//开火函数
-
-	bool onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const RobotAI_BulletInformation& bullet);//躲闪函数
-
-	/*对每个机甲适应的部分>>>>>>>*/
 
 
-	bool WillHit(const RobotAI_BulletInformation& bullet, const RobotAI_RobotInformation& rotinfo);//将会击中自己的子弹数
-	double abvalue(double x);
-	double pointdis(const Circle a1, const Circle a2, const Circle a3);
-	double pointdis(double x1, double y1, double x2, double y2, double x3, double y3);
-	double dis(double x1, double y1, double x2, double y2);
-	double dis(const Circle& a, const Circle& b);
-	
+
+
+
+
 };

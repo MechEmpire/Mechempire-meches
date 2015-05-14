@@ -117,12 +117,16 @@ public:
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
 
-	bool RobotAI::HaveBarrier(const RobotAI_BattlefieldInformation& info,const int myID,const int ArID);//判断和地方之间是否有障碍物
-	void RobotAI::onTag1(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info, const int myID);//瞄准函数（不带预判）
-	double RobotAI::onTagRota(const RobotAI_BattlefieldInformation& info, const int myID);//返回武器夹角和与对面方向的夹角差
-	void RobotAI::onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//移动函数
-	void RobotAI::onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//开火函数
+	bool HaveBarrier(const RobotAI_BattlefieldInformation& info,const int myID,const int ArID);//判断和地方之间是否有障碍物
+	void onTag1(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info, const int myID);//瞄准函数（不带预判）
+	double onTagRota(const RobotAI_BattlefieldInformation& info, const int myID);//返回武器夹角和与对面方向的夹角差
+	void onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//移动函数
+	void onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//开火函数
 	
-
-
+	double abvalue(double x);
+	double pointdis(const Circle a1, const Circle a2, const Circle a3);
+	double pointdis(double x1, double y1, double x2, double y2, double x3, double y3);
+	double dis(double x1, double y1, double x2, double y2);
+	double dis(const Circle& a, const Circle& b);
+	
 };
