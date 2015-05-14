@@ -416,7 +416,7 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 			break;
 		case BT_Cannonball:
 		case BT_ApolloBall:
-			if (tag.remainingAmmo <= 3)
+			if (tag.remainingAmmo <= 10)
 				return false;
 			order.eturn = 1;
 			order.run = 1;
