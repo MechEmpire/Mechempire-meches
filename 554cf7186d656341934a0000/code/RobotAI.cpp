@@ -27,199 +27,124 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	//		info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
+	static int seed = 0, counter = 19;
+	counter++;
 
-	order.run = 1;
-
-	//我的机甲信息
-	double robot_x = info.robotInformation[myID].circle.x;
-	double robot_y = info.robotInformation[myID].circle.y;
-	double robot_rotation = info.robotInformation[myID].engineRotation;
-	double robot_r = info.robotInformation[myID].circle.r;
-	double robot_vx = info.robotInformation[myID].vx;
-	double robot_vy = info.robotInformation[myID].vy;
+	Circle me = info.robotInformation[myID].circle;
+	Circle enemy = info.robotInformation[1 - myID].circle;
+	double me_rotation = info.robotInformation[myID].engineRotation;
 	double weapon_rotation = info.robotInformation[myID].weaponRotation;
+	weapontypename enemy_weapon = info.robotInformation[1 - myID].weaponTypeName;
+	double enemy_vx = info.robotInformation[1 - myID].vx;
+	double enemy_vy = info.robotInformation[1 - myID].vy;
+	Circle dest = enemy;
+	double dest_theta = 0;
 
-	//敌方机甲信息
-	double enemy_x = info.robotInformation[1 - myID].circle.x;
-	double enemy_y = info.robotInformation[1 - myID].circle.y;
-	double enemy_r = info.robotInformation[1 - myID].circle.r;
-	double enemy_ = info.robotInformation[1 - myID].vr;
- 	weapontypename enemy_weapon = info.robotInformation[1 - myID].weaponTypeName;
-	double enemy_theta;
-	double distance = sqrt(pow((enemy_y - robot_y), 2) + pow((enemy_x - robot_x), 2)) - 100 - enemy_r;
-	if (enemy_lastx == 0){
-		enemy_lastx = enemy_x;
-		enemy_lasty = enemy_y;
-	}
-	double enemy_nextx = enemy_x + (enemy_x - enemy_lastx)*(distance / 14);
-	double enemy_nexty = enemy_y + (enemy_y - enemy_lasty)*(distance / 14);
-	if (enemy_nextx < 100)
-		enemy_nextx = 100;
-	else if (enemy_nextx > 1266)
-		enemy_nextx = 1300;
-	if (enemy_nexty < 100)
-		enemy_nexty = 100;
-	else if (enemy_nexty > 580)
-		enemy_nexty = 580;
-	enemy_lastx = enemy_x;
-	enemy_lasty = enemy_y;
+	bool fire = true;
+	if (block(me,info.obstacle[0],weapon_rotation) && distance(me,info.obstacle[0]) < distance(me,enemy))
+		fire = false;
+	if (block(me, info.obstacle[1], weapon_rotation) && distance(me, info.obstacle[1]) < distance(me, enemy))
+		fire = false;
 
-	//我的机甲与障碍物夹角，用于确定开火方向
-	double obstacle1_distance = sqrt(pow(300 - robot_x, 2) + pow(250 - robot_y, 2));
-	double obstacle2_distance = sqrt(pow(1066 - robot_x, 2) + pow(430 - robot_y, 2));
-	double obstacle1_theta1 = atan2(250 - robot_y, 300 - robot_x) * 180 / PI;
-	double obstacle2_theta1 = atan2(430 - robot_y, 1066 - robot_x) * 180 / PI;
-	double obstacle1_theta2 = asin(75 / obstacle1_distance) * 180 / PI;
-	double obstacle2_theta2 = asin(75 / obstacle2_distance) * 180 / PI;
-	double obstacle1_dtheta1 = obstacle1_theta1 - obstacle1_theta2 - 3;
-	if (obstacle1_dtheta1 < -180)
-		obstacle1_dtheta1 += 360;
-	double obstacle1_dtheta2 = obstacle1_theta1 + obstacle1_theta2 + 3;
-	if (obstacle1_dtheta2 > 180)
-		obstacle1_dtheta2 -= 360;
-	double obstacle2_dtheta1 = obstacle2_theta1 - obstacle2_theta2 - 3;
-	if (obstacle2_dtheta1 < -180)
-		obstacle2_dtheta1 += 360;
-	double obstacle2_dtheta2 = obstacle2_theta1 + obstacle2_theta2 + 3;
-	if (obstacle2_dtheta2 > 180)
-		obstacle2_dtheta2 -= 360;
-
-	bool doFire = true;
-	if (weapon_rotation > obstacle1_dtheta1 && weapon_rotation < obstacle1_dtheta2 && distance +100 +enemy_r > obstacle1_distance)
-		doFire = false;
-	if (weapon_rotation > obstacle2_dtheta1 && weapon_rotation < obstacle2_dtheta2 && distance +100 +enemy_r > obstacle2_distance)
-		doFire = false;
-
-
-	//离我最近的障碍物信息，用于绕其旋转
-	double obstacle_distance;
-	double obstacle_theta;
-	double obstacle_dtheta;
-	if (robot_x < 683){
-		obstacle_distance = obstacle1_distance;
-		if (enemy_weapon == WT_MissileLauncher)
-			obstacle_theta = atan2(enemy_y - robot_y, enemy_x - robot_x) * 180 / PI;
-		else
-			obstacle_theta = obstacle1_theta1;
-	}
-	else{
-		obstacle_distance = obstacle2_distance;
-		if (enemy_weapon == WT_MissileLauncher)
-			obstacle_theta = atan2(enemy_y - robot_y, enemy_x - robot_x) * 180 / PI;
-		else
-			obstacle_theta = obstacle2_theta1;
-	}
-	obstacle_dtheta = robot_rotation - obstacle_theta;
-	if (obstacle_dtheta > 180)
-		obstacle_dtheta -= 360;
-	else if (obstacle_dtheta < -180)
-		obstacle_dtheta += 360;
-
-	//军火库信息
-	double arsenal_distance;
-	double arsenal_theta;
-	double arsenal_dtheta;
 	bool hasArsenal = false;
-
-	double d0 = sqrt(pow(50 - robot_x, 2) + pow(630 - robot_y, 2));
-	double d1 = sqrt(pow(1316 - robot_x, 2) + pow(50 - robot_y, 2));
-	double d3 = sqrt(pow(50 - enemy_x, 2) + pow(630 - enemy_y, 2));
-	double d4 = sqrt(pow(1316 - enemy_x, 2) + pow(50 - enemy_y, 2));
 	if (info.arsenal[0].respawning_time == 0){
 		hasArsenal = true;
 		if (info.arsenal[1].respawning_time == 0){
-			if (d0 < d1){
-				if (d0 < d3){
-					arsenal_distance = d0;
-					arsenal_theta = atan2(630 - robot_y, 50 - robot_x) * 180 / PI;
-				}
-				else{
-					arsenal_distance = d1;
-					arsenal_theta = atan2(50 - robot_y, 1316 - robot_x) * 180 / PI;
-				}
+			double d1 = distance(me, info.arsenal[0].circle);
+			double d2 = distance(enemy, info.arsenal[0].circle);
+			if (d1 < d2)
+				dest = info.arsenal[0].circle;
+			else
+				dest = info.arsenal[1].circle;
+		}else
+			dest = info.arsenal[0].circle;
+	}
+	else if (info.arsenal[1].respawning_time == 0){
+		hasArsenal = true;
+		dest = info.arsenal[1].circle;
+	}
+
+	bool check_collision = collision(me, enemy);
+
+	double enemy_distance = distance(me, enemy) - 100 - enemy.r;
+	Circle preact = forecast(enemy, enemy_vx, enemy_vy, enemy_distance/11);
+	double target_theta = theta(me, preact);
+	double target_dtheta = dtheta(weapon_rotation, target_theta);
+	
+	if (info.robotInformation[myID].remainingAmmo > 1 ){
+		if (counter == 20){
+			srand((time(0)) << seed);
+			seed++;
+			counter = 0;
+		}
+		switch (enemy_weapon)
+		{
+		case WT_Tesla:
+			dest = enemy;
+			break;
+		case WT_Prism:
+			dest = enemy;
+			break;
+		case WT_MissileLauncher:
+			dest = enemy;
+			break;
+		case WT_ElectricSaw:
+			if (distance(me,enemy) > 500)
+				dest = enemy;
+			else
+			{
+				dest.x = enemy.x + (me.x - enemy.x) * 500 / distance(me, enemy);
+				dest.y = enemy.y + (me.y - enemy.y) * 500 / distance(me, enemy);
 			}
-			else{
-				if (d1 < d4){
-					arsenal_distance = d1;
-					arsenal_theta = atan2(50 - robot_y, 1316 - robot_x) * 180 / PI;
-				}
-				else{
-					arsenal_distance = d0;
-					arsenal_theta = atan2(630 - robot_y, 50 - robot_x) * 180 / PI;
-				}
+			break;
+		default:
+			if (distance(me, enemy) > 200)
+				dest = { (enemy.x + 3 * rand() % 1366) / 4, (enemy.y + 2*rand() % 680) / 3, enemy.r };
+			else
+			{
+				dest.x = enemy.x + (me.x - enemy.x) * 200 / distance(me, enemy);
+				dest.y = enemy.y + (me.y - enemy.y) * 200 / distance(me, enemy);
 			}
+			break;
+		} 
+	}
+	else if (!hasArsenal){
+		double d1 = distance(me, info.obstacle[0]);
+		double d2 = distance(me, info.obstacle[1]);
+		if (d1 < d2){
+			double d3 = distance(enemy, info.obstacle[0]);
+			dest.x = info.obstacle[0].x - (enemy.x - info.obstacle[0].x)*(75 + me.r) / d3;
+			dest.y = info.obstacle[0].y - (enemy.y - info.obstacle[0].y)*(75 + me.r) / d3;
 		}
 		else
 		{
-			arsenal_distance = d0;
-			arsenal_theta = atan2(630 - robot_y, 50 - robot_x) * 180 / PI;
+			double d3 = distance(enemy, info.obstacle[1]);
+			dest.x = info.obstacle[1].x - (enemy.x - info.obstacle[1].x)*(75 + me.r) / d3;
+			dest.y = info.obstacle[1].y - (enemy.y - info.obstacle[1].y)*(75 + me.r) / d3;
 		}
 	}
-	else
-	{
-		if (info.arsenal[1].respawning_time == 0){
-			hasArsenal = true;
-			arsenal_distance = d1;
-			arsenal_theta = atan2(50 - robot_y, 1316 - robot_x) * 180 / PI;
-		}
-	}
-	arsenal_dtheta = robot_rotation - arsenal_theta;
-	if (arsenal_dtheta > 180)
-		arsenal_dtheta -= 360;
-	else if (arsenal_dtheta < -180)
-		arsenal_dtheta += 360;
 
-	//我的机甲移动命令
-	if (info.robotInformation[myID].remainingAmmo > 1 || !hasArsenal){
-		if (obstacle_distance > robot_r + 85){
-			if (obstacle_dtheta >= -180 && obstacle_dtheta <= -10){
-				order.eturn = 1;
-			}
-			else if (obstacle_dtheta >= 10 && obstacle_dtheta <= 180){
-				order.eturn = -1;
+	dest = adjustdest(dest);
+	dest_theta = theta(me, dest);
+	double dest_dtheta = dtheta(me_rotation, dest_theta);
+
+	order = rotate(dest_dtheta, target_dtheta, check_collision, fire);
+
+	for (int i = 0; i < info.num_bullet; i++){
+		RobotAI_BulletInformation bullet = info.bulletInformation[i];
+		if (bullet.launcherID == 1 - myID){
+			double vx = info.robotInformation[myID].vx;
+			double vy = info.robotInformation[myID].vy;
+			if (block(bullet.circle, me, bullet.rotation)){
+				if (dtheta(me_rotation, atan2(vy, vx)) > 0)
+					order.eturn = -1;
+				else
+					order.eturn = 1;
+				break;
 			}
 		}
-		else 
-			order.eturn = -1;
 	}
-	else if (arsenal_dtheta >= -180 && arsenal_dtheta <= -10){
-		order.eturn = 1;
-	}
-	else if (arsenal_dtheta >= 10 && arsenal_dtheta <= 180){
-		order.eturn = -1;
-	}
-
-	//我的机甲攻击命令
-	enemy_theta = atan2(enemy_nexty - robot_y, enemy_nextx - robot_x) * 180 / PI;
-	if (weapon_lastrotation == 0)
-		weapon_lastrotation = weapon_rotation;
-	double dtheta = weapon_rotation - enemy_theta;
-	double correct_dtheta = weapon_lastrotation - enemy_theta;
-	if (correct_dtheta > 180)
-		correct_dtheta -= 360;
-	if (correct_dtheta < -180)
-		correct_dtheta += 360;
-
-	if (dtheta > 180)
-		dtheta -= 360;
-	if (dtheta < -180)
-		dtheta += 360;
-
-	if (dtheta >= -180 && dtheta <= -3){
-		order.wturn = 1;
-		if (correct_dtheta > dtheta && doFire)
-			order.fire = 1;
-	}
-	else if (dtheta >= 3 && dtheta <= 180){
-		order.wturn = -1;
-		if (correct_dtheta < dtheta && doFire)
-			order.fire = 1;
-	}
-	else if (doFire)
-		order.fire = 1;
 }
-
-
 
 void RobotAI::ChooseArmor(weapontypename& weapon, enginetypename& engine, bool a)
 {
@@ -231,19 +156,9 @@ void RobotAI::ChooseArmor(weapontypename& weapon, enginetypename& engine, bool a
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_Apollo;	//啊，我爱加农炮
+	weapon = WT_Cannon;	//啊，我爱加农炮
 	engine = ET_AFV;	//啊，我爱小蜘蛛
 }
-
-
-
-
-
-
-
-
-
-
 
 //-----------------------------------------------------
 //2.个性信息
@@ -261,9 +176,6 @@ string RobotAI::GetAuthor()
 	//返回机甲制作人或团队的名字
 	return "米米尔隆";
 }
-
-
-
 
 //返回一个(-255,255)之间的机甲武器炮塔的颜色偏移值（红、绿、蓝）
 //你可以在flash客户端的参数预览中预览颜色搭配的效果
@@ -283,8 +195,6 @@ int RobotAI::GetWeaponBlue()
 	return -190;
 }
 
-
-
 //返回一个(-255,255)之间的机甲引擎载具的颜色偏移值（红、绿、蓝）
 //你可以在flash客户端的参数预览中预览颜色搭配的效果
 int RobotAI::GetEngineRed()
@@ -302,14 +212,6 @@ int RobotAI::GetEngineBlue()
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
 	return -190;
 }
-
-
-
-
-
-
-
-
 
 //-----------------------------------------------------
 //3.用不用随你的触发函数
@@ -345,6 +247,119 @@ void RobotAI::onHit(int launcherID, bullettypename btn)
 	//参数：btn	...	击中你的子弹种类（枚举类型）
 }
 
-
-
 //TODO:这里可以实现你自己的函数
+
+RobotAI_Order RobotAI::rotate(double erotation, double wrotation, bool check_collision, bool fire){
+	RobotAI_Order order;
+	double limit_rotation = 3;
+	order.run = 1;
+
+	if (erotation > limit_rotation)
+		order.eturn = -1;
+	else if (erotation < -limit_rotation)
+		order.eturn = 1;
+	
+	
+	if (wrotation > limit_rotation)
+		order.wturn = -1;
+	else if (wrotation < -limit_rotation)
+		order.wturn = 1;
+	else if (fire)
+		order.fire = 1;
+		
+	if (check_collision)
+		order.eturn = 1;
+	return order;
+}
+
+double RobotAI::distance(double x1, double y1, double x2, double y2){
+	return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+}
+double RobotAI::distance(Circle c1, Circle c2){
+	return distance(c1.x, c1.y, c2.x, c2.y);
+}
+
+double RobotAI::theta(double x1, double y1, double x2, double y2){
+	return atan2(y2 - y1, x2 - x1) * 180 / PI;
+}
+double RobotAI::theta(Circle c1, Circle c2){
+	return theta(c1.x, c1.y, c2.x, c2.y);
+}
+
+double RobotAI::dtheta(double theta1, double theta2){
+	double dtheta = theta1 - theta2;
+	if (dtheta > 180)
+		dtheta -= 360;
+	else if (dtheta < -180)
+		dtheta += 360;
+	return dtheta;
+}
+
+Circle RobotAI::forecast(Circle robot, double vx, double vy, double time){
+	double correct_x = 0;
+	double correct_y = 0;
+	Circle preact = robot;
+	if (enemy_lastx == 0){
+		enemy_lastx = robot.x;
+		enemy_lasty = robot.y;
+	}
+	else{
+		correct_x = robot.x - enemy_lastx;
+		correct_y = robot.y - enemy_lasty;
+		enemy_lastx = robot.x;
+		enemy_lasty = robot.y;
+	}
+	if (vx * correct_x > 0 || vy * correct_y > 0){
+		preact.x = robot.x + vx * time;
+		preact.y = robot.y + vy * time;
+	}
+
+	if (preact.x < 75)
+		preact.x = 50;
+	else if (preact.x > 1290)
+		preact.x = 1300;
+	if (preact.y < 75)
+		preact.y = 50;
+	else if (preact.y > 605)
+		preact.y = 615;
+
+	return preact;
+}
+
+bool RobotAI::block(Circle start, Circle end, double rotation){
+	double dis = distance(start, end);
+	double theta1 = theta(start, end);
+	double theta2 = asin(end.r / dis) * 180 / PI;
+	double dtheta1 = dtheta(theta1, theta2 + 3);
+	double dtheta2 = dtheta(theta1, -theta2 - 3);
+
+	if (dtheta2 - dtheta1 > 180)
+		return rotation < dtheta1 || rotation > dtheta2;
+	else if (dtheta1 - dtheta2 > 180)
+		return rotation > dtheta1 || rotation < dtheta2;
+	else
+		return rotation > dtheta1 && rotation < dtheta2;
+}
+Circle RobotAI::adjustdest(Circle dest){
+	if (dest.x < 50)
+		dest.x = 50;
+	else if (dest.x > 1316)
+		dest.x = 1316;
+	if (dest.y < 50)
+		dest.y = 50;
+	else if (dest.y > 630)
+		dest.y = 630;
+
+	return dest;
+}
+bool RobotAI::collision(Circle me, Circle enemy){
+	const Circle obstacle1 = { 300, 250, 75 };
+	const Circle obstacle2 = { 1066, 430, 75 };
+	if (distance(me, obstacle1) < me.r + obstacle1.r + 10)
+		return true;
+	else if (distance(me, obstacle2) < me.r + obstacle2.r + 10)
+		return true;
+	else if (distance(me, enemy) < me.r + enemy.r + 5)
+		return true;
+	return false;
+}

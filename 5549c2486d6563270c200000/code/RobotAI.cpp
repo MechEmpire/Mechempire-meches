@@ -36,11 +36,12 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	RobotAI_RobotInformation me = info.robotInformation[myID], armor = info.robotInformation[1 - myID];
 	double distance_me_armor = Distance(me.circle.x, me.circle.y, armor.circle.x, armor.circle.y);//我和敌人的距离
+	double fire_angle = howToRotate(me.circle, armor.circle, me.weaponRotation, armor.vx, armor.vy);//应该旋转的角度
 	//根据是否有障碍物决定是否开火
 	Circle obs[5];
 	for(int i = 0; i < info.num_obstacle; i++)
 		obs[i] = info.obstacle[i];
-	double fire_angle = howToRotate(me.circle, armor.circle, me.weaponRotation, armor.vx, armor.vy);//应该旋转的角度
+	
 	//针对太空要塞做优化，贴近点打！
 	if( armor.engineTypeName != ET_Shuttle)
 		order.fire = doIFire(me.circle, armor.circle, obs, info.num_obstacle, me.weaponRotation, fire_angle);
@@ -59,39 +60,48 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	order.eturn =  runAndrunAFV(me.circle, armor.circle, me.engineRotation);
 	
 		
-	//检查子弹打光没	
-	if(info.robotInformation[myID].remainingAmmo <= 1 )
-	{
-		//没子弹了就去仓库领取
-		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1],
-			me.circle),me.engineRotation);
-	}
-
-	//等等！有子弹再打我？
-	//Circle bu[200];
-	int bu_num = info.num_bullet;
-	for(int i = 0; i < bu_num; i++){
-		if(info.bulletInformation[i].launcherID == 1 - myID){			
-			if(BulletShotMe(info.bulletInformation[i].circle, me.circle, info.bulletInformation[i].vx, info.bulletInformation[i].vy, armor.weaponTypeName)){
-				//赶紧躲开！
-				order.eturn = AvoidBulletAFV(info.bulletInformation[i], me);
-				break;//先检测一颗子弹吧
-			}
-		}
-	}
-	//判断距离，不能太近
-	
+	//判断距离，不能太近	
 	double min_dist = 350;
-	if(armor.weaponTypeName == WT_ElectricSaw)
-		min_dist = 550;
+	if(armor.weaponTypeName == WT_ElectricSaw || armor.weaponTypeName == WT_Machinegun)
+		min_dist = 500;
 	//打猥琐飞弹和光棱和磁暴只要贴脸干！其他的要远离，尤其是电锯！
 	if(armor.weaponTypeName != WT_MissileLauncher && armor.weaponTypeName !=WT_Prism && armor.weaponTypeName !=WT_Tesla){
 		if(distance_me_armor <= min_dist)//太近了就往回走
 			order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
 	}
+
+	//等等！有子弹再打我？
+	//Circle bu[200];
+	int bu_num = info.num_bullet;
+	bullettypename bu_type;//子弹类型
+	for(int i = 0; i < bu_num; i++){
+		if(info.bulletInformation[i].launcherID == 1 - myID){			
+			if(BulletShotMe(info.bulletInformation[i].circle, me.circle, info.bulletInformation[i].vx, info.bulletInformation[i].vy, armor.weaponTypeName)){
+				//赶紧躲开！
+				bu_type = info.bulletInformation[i].type;
+				if( bu_type == BT_Cannonball || bu_type == BT_ApolloBall || bu_type == BT_RPGBall)//针对阿波罗、加农炮、火箭有不一样的躲法
+					order.eturn = AvoidCannonAFV(info.bulletInformation[i], me);
+				else
+					order.eturn = AvoidBulletAFV(info.bulletInformation[i], me);
+				break;//先检测一颗子弹吧
+			}
+		}
+	}
+	
+	//靠墙？
+	if(me.circle.x <= 60 || me.circle.y <= 60 || 680 - me.circle.y <= 60 || 1366 - me.circle.x <= 60)
+		order.eturn = avoidWall(me);
+	//检查子弹打光没	
+	if(info.robotInformation[myID].remainingAmmo <= 2 )
+	{
+		//没子弹了就去仓库领取
+		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1],
+			me.circle),me.engineRotation);
+	}
 	//遇到障碍物？
-	if(avoidObstacleAFV(me.circle, obs, info.num_obstacle))
-		order.eturn = -1;
+	int obs_n = StrikeObstacle(me.circle, obs, info.num_obstacle);
+	if(obs_n != -1)
+		order.eturn = avoidObstacleAFV(me, obs[obs_n]);
 	
 	
 	if(queue_lastFivePoint.size() >= 5)//仅保存5个点
@@ -271,28 +281,37 @@ int RobotAI::runAndrunAFV(Circle me,Circle armor,double engine_rotation)
 	
 }
 //躲避障碍物
-bool RobotAI::avoidObstacleAFV(Circle me, Circle obstacle[],const int num_obs)
+int RobotAI::StrikeObstacle(Circle me, Circle obstacle[],const int num_obs)
 {
 	double *dist = new double[num_obs];
 	for(int i = 0; i < num_obs; i++)
 	{
 		dist[i] = Distance(me.x, me.y, obstacle[i].x, obstacle[i].y);
-		if(dist[i]<=145)
+		if(dist[i]<=135)
 		{
 			delete dist;
-			return true;
+			return i;
 		}
 	}
 	delete dist;
-	return false;
+	return -1;
+}
+int RobotAI::avoidObstacleAFV(RobotAI_RobotInformation me, Circle obstacle)
+{
+	double angle = atan2(obstacle.y - me.circle.y, obstacle.x - me.circle.x) * 180 / PI;//我和障碍物的角度
+	if( Rotate(me.engineRotation, angle) == 1)
+		angle += 90;
+	else
+		angle -= 90;
+	AngleAdjust(angle);
+	return Rotate(angle, me.engineRotation);
 }
 //如果有子弹靠近我
 bool RobotAI::BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype)
 {
 	int min_dis = 350;
-	if(weapontype == WT_Apollo || weapontype == WT_RPG)
-		min_dis = 450;
-	//Distance(bu.x, bu.y, me.x, me.y)
+	if(weapontype == WT_Apollo || weapontype == WT_RPG || weapontype == WT_Cannon)
+		min_dis = 550;
 	//打向我的角度
 	double bulletAngle = atan2(vy,vx) * 180 / PI;
 	//我与子弹的角度
@@ -329,40 +348,70 @@ int RobotAI::AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformati
 	//double angle = atan2(me.circle.y - bu.circle.y, me.circle.x - bu.circle.x) *180/PI;
 	if(me.circle.x >341 && me.circle.x < 1025)
 	{
+		//上半部分就往下躲，下半往上
 		if(me.circle.y <= 340)
 			bu_angle = 90;
 		else
 			bu_angle = -90;
 	}else{
+		//左边往右，右边往左
 		if(me.circle.x <= 341)
 			bu_angle = 0;
 		else
 			bu_angle = 180;
 	}
-
-	/*//遇到墙则反弹
-	if(680 - me.circle.y <= 5)
-	{
-		bu_angle = -90;
-	}else if(me.circle.y <= 5){
-		bu_angle = 90;
-	}else if(me.circle.x <= 5){
-		bu_angle = 0;
-	}else if(1366 - me.circle.x <= 5)
-		bu_angle = 180;
-	*/
+	
 	return Rotate(bu_angle, me.engineRotation);	
 }
-
+//战锤坦克躲加农炮和阿波罗电磁炮和火箭
+int RobotAI::AvoidCannonAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me)
+{
+	double bu_angle = atan2(bu.vy, bu.vx) * 180 / PI;//子弹角度
+	double angle = atan2(me.circle.y - bu.circle.y, me.circle.x - me.circle.x) * 180 / PI;//子弹与我的角度
+	if(Rotate(angle, bu_angle) == 1) //子弹攻击上方
+		bu_angle += 90;
+	else                             //子弹攻击下方
+		bu_angle -= 90;
+	AngleAdjust(bu_angle);
+	return Rotate(bu_angle, me.engineRotation);
+}
+//遇到墙
+int RobotAI::avoidWall(RobotAI_RobotInformation me)
+{
+	double angle;//应该转的方向
+	//遇到墙则反弹
+	if(680 - me.circle.y <= 70)
+	{
+		if(Rotate(-90, me.engineRotation) == 1)
+			angle = -145;
+		else
+			angle = 45;
+	}else if(me.circle.y <= 70){
+		if(Rotate(90, me.engineRotation) == 1)
+			angle = 45;
+		else
+			angle = -135;
+	}else if(me.circle.x <= 70){
+		if(Rotate(0, me.engineRotation) == 1)
+			angle = -45;
+		else
+			angle = 45;
+	}else if(1366 - me.circle.x <= 70)
+		if(Rotate(180, me.engineRotation) == 1)
+			angle = 45;
+		else
+			angle = -45;	
+	return Rotate(angle, me.engineRotation);
+}
 //确定旋转角方向,旋转机枪Mashinegun射速11,返回应该旋转的角度
 double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, double vx, double vy)
 {
 	double angle = atan2(armor.y - me.y, armor.x - me.x) * 180 / PI;//我和敌人之间的角度
 	double v1Angle;//敌人速度方向
 	double offset = 0;//这是偏移角
+	double dist_factor = 0.550;//修正因子,根据我的想法和距离来调整
 	double armor_move = Distance(queue_lastFivePoint.front().x, queue_lastFivePoint.front().y,
 		queue_lastFivePoint.back().x, queue_lastFivePoint.back().y);//敌人前5帧运动的长度
-	//fout<< armor_move <<"   "<<queue_lastFivePoint.size()<<endl;
 	if( armor_move > 6)//当敌人运动的时候计算偏移角
 	{
 		double v1 = Distance(vx, vy, 0, 0);//计算armorSpeed速度也可以套用distance函数
@@ -372,8 +421,9 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 		v1Angle = atan2(vy, vx) * 180 / PI;
 		double ABC_angle = 180 - v1Angle + angle;//辅助角CBD
 		double d_AC = sqrt(d*d + r*r - 2*d*r*cos(ABC_angle / 180 * PI));//三角形的AC边
-		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * 0.45;//0.75是修正因子
-		//fout<<d<<"  "<<r<<"   "<<v1Angle<<"   "<<angle<<"   "<<ABC_angle<<"   "<<offset<<endl;		
+		if(d < 300)
+			dist_factor *= d / 300;
+		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * dist_factor;		
 		//加上偏移角
 		if(angle > 0 && angle < 180){
 			if(angle - 180 < v1Angle && v1Angle < angle)
@@ -434,7 +484,6 @@ int RobotAI::doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,doubl
 	{		
 		return 0;
 	}
-	//fout<<now_angle<<"   "<<fire_angle<<"  "<<A<<"  "<<dis<<"   "<<obs.r<<endl;
 	return 1;
 }
 //选则一个可以去的军火库

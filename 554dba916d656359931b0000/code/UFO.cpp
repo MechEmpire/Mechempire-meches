@@ -64,11 +64,6 @@ void diskMove(const RobotAI_BattlefieldInformation& info, double &x, double &y, 
 		vx += 0.2 * cos(AngleToRadian(engineAngle));
 		vy += 0.2 * sin(AngleToRadian(engineAngle));
 	}
-	else if (fire < 0)
-	{
-		//vx -= myAcceleration * cos(AngleToRadian(engineAngle));
-		//vy -= myAcceleration * sin(AngleToRadian(engineAngle));
-	}
 
 	if (pow(vx, 2) + pow(vy, 2) > 36)
 	{
@@ -128,7 +123,6 @@ int ufoHide(bulletInfo* bullet, const int bulletNum, const RobotAI_BattlefieldIn
 			for (int rep = 0; rep < SkipTimes; rep++)
 			{
 				diskMove(info, myX, myY, myVX, myVY, myEngRot, order % 2, transformOrder(order));
-				double nearestOne = 10000;
 				for (int bn = 0; bn < bulletChangeNum[j * SkipTimes + rep]; bn++)
 				{
 					bool isSkip = false;
@@ -161,7 +155,6 @@ int ufoHide(bulletInfo* bullet, const int bulletNum, const RobotAI_BattlefieldIn
 						double relY = myY - y;
 						if (!isSkip && (relX * vx + relY * vy > 0))
 						{
-							//printf("%f ", 1 / sqrt(relX * relX + relY * relY) / abs(sin(acos((relX * vx + relY * vy) / sqrt(relX * relX + relY * relY) / sqrt(vx * vx + vy * vy)))) / sqrt(relX * relX + relY * relY));
 							*(possSol + i) += 1 / sqrt(relX * relX + relY * relY) / abs(sin(acos((relX * vx + relY * vy) / sqrt(relX * relX + relY * relY) / sqrt(vx * vx + vy * vy)))) / sqrt(relX * relX + relY * relY);
 						}
 					}
@@ -174,9 +167,158 @@ int ufoHide(bulletInfo* bullet, const int bulletNum, const RobotAI_BattlefieldIn
 			bestSol = i;
 		}
 	}
-	//printf("BesRes: %i, %i\n", bestSol, bestSolRes);
 	delete[] bulletChange;
 	delete[] possSol;
-	//printf("Best Sol: %f \n", bestSolRes);
+
 	return (bestSol % 6);
+}
+
+int addAmmoRun(const RobotAI_BattlefieldInformation& info, const int myID, const int enemyID, int &wanderingTime)
+{
+	double coolingTime[2];
+	double distanceToAmmo[2][2];
+	int selectedAmmo = 0;
+	for (int i = 0; i < 2; i++)
+	{
+		distanceToAmmo[0][i] = sqrt(pow(info.robotInformation[myID].circle.x - info.arsenal[i].circle.x, 2) + pow(info.robotInformation[myID].circle.y - info.arsenal[i].circle.y, 2));
+		distanceToAmmo[1][i] = sqrt(pow(info.robotInformation[enemyID].circle.x - info.arsenal[i].circle.x, 2) + pow(info.robotInformation[enemyID].circle.y - info.arsenal[i].circle.y, 2));
+		coolingTime[i] = info.arsenal[i].respawning_time - distanceToAmmo[0][i] / 6 - 30;
+	}
+
+	if (distanceToAmmo[0][0] <= distanceToAmmo[0][1]) // 0 is near me
+	{
+		if (coolingTime[0] <= 0 && distanceToAmmo[0][0] <= distanceToAmmo[1][0])
+		{
+			selectedAmmo = 0;
+		}
+		else if (coolingTime[0] <= 0 && distanceToAmmo[0][0] > distanceToAmmo[1][0])
+		{
+			if (coolingTime[1] <= 0)
+			{
+				selectedAmmo = 1;
+			}
+			else
+			{
+				wanderingTime = int(coolingTime[1]);
+				return -1;
+			}
+		}
+		else if (coolingTime[1] <= 0 && distanceToAmmo[0][1] <= distanceToAmmo[1][1])
+		{
+			selectedAmmo = 1;
+		}
+		else if (coolingTime[1] <= 0 && distanceToAmmo[0][1] > distanceToAmmo[1][1])
+		{
+			selectedAmmo = 1;
+		}
+		else{
+			if (info.robotInformation[enemyID].remainingAmmo == 0)
+			{
+				if (coolingTime[0] < coolingTime[1])
+				{
+					selectedAmmo = 0;
+				}
+				else
+				{
+					selectedAmmo = 1;
+				}
+			}
+			else
+			{
+				if (coolingTime[0] < coolingTime[1])
+				{
+					wanderingTime = int(coolingTime[0]);
+					return -1;
+				}
+				else
+				{
+					wanderingTime = int(coolingTime[1]);
+					return -1;
+				}
+			}
+		}
+	}
+	else // 1 is near me
+	{
+		if (coolingTime[1] <= 0 && distanceToAmmo[0][1] < distanceToAmmo[1][1])
+		{
+			selectedAmmo = 1;
+		}
+		else if (coolingTime[1] <= 0 && distanceToAmmo[0][1] > distanceToAmmo[1][1])
+		{
+			if (coolingTime[0] <= 0)
+			{
+				selectedAmmo = 0;
+			}
+			else
+			{
+				wanderingTime = int(coolingTime[0]);
+				return -1;
+			}
+		}
+		else if (coolingTime[0] <= 0 && distanceToAmmo[0][0] <= distanceToAmmo[1][0])
+		{
+			selectedAmmo = 0;
+		}
+		else if (coolingTime[0] <= 0 && distanceToAmmo[0][0] > distanceToAmmo[1][0])
+		{
+			selectedAmmo = 0;
+		}
+		else{
+			if (info.robotInformation[enemyID].remainingAmmo == 0)
+			{
+				if (coolingTime[0] < coolingTime[1])
+				{
+					selectedAmmo = 0;
+				}
+				else
+				{
+					selectedAmmo = 1;
+				}
+			}
+			else
+			{
+				if (coolingTime[0] < coolingTime[1])
+				{
+					wanderingTime = int(coolingTime[0]);
+					return -1;
+				}
+				else
+				{
+					wanderingTime = int(coolingTime[1]);
+					return -1;
+				}
+			}
+		}
+	}
+
+	const int ForecastTimes = 5; // change following with comment
+	const int SkipTimes = 5;
+	int bestSol = -1;
+	double bestSolRes = -1;
+
+	for (int i = 0; i < int(pow(6, ForecastTimes)); i++)
+	{
+		double myX = info.robotInformation[myID].circle.x;
+		double myY = info.robotInformation[myID].circle.y;
+		double myVX = info.robotInformation[myID].vx;
+		double myVY = info.robotInformation[myID].vy;
+		double myEngRot = info.robotInformation[myID].engineRotation;
+
+		for (int j = 0; j < ForecastTimes; j++)
+		{
+			int order = int(i / int(pow(6, j))) % 6;
+
+			for (int rep = 0; rep < SkipTimes; rep++)
+			{
+				diskMove(info, myX, myY, myVX, myVY, myEngRot, order % 2, transformOrder(order));
+			}
+		}
+		if (i == 0 || bestSolRes > sqrt(pow(myX + myVX - info.arsenal[selectedAmmo].circle.x, 2) + pow(myY + myVY - info.arsenal[selectedAmmo].circle.y, 2)))
+		{
+			bestSolRes = sqrt(pow(myX + myVX - info.arsenal[selectedAmmo].circle.x, 2) + pow(myY + myVY - info.arsenal[selectedAmmo].circle.y, 2));
+			bestSol = i;
+		}
+	}
+	return bestSol % 6;
 }

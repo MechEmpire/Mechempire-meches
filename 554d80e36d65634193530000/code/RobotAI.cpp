@@ -31,85 +31,112 @@ double getAngle(Circle a, Circle b)
 	return A.r;
 }
 
-int turnfire(double radfire, double radother, double radins, bool&state)
+aa turnfire(Circle B, double rf, Circle o ,int state)
 {
-
-	double rad1, rad2;
-	double a;
-	double a2;
-	int a1[2] = { 0 };
-	a = radother + radins;
-	rad1 = AngleAdjust(a);
-	a = radother - radins;
-	rad2 = AngleAdjust(a);
-	//cout << rad1 << '\t' << rad2 << '\n';
-	a = abs(rad1 - rad2);
-	if (a <= 180)
-	{
-		a1[0] = 1;
-	}
-
-	if (rad1 > rad2)
-		a2 = rad2;
-	else
-		a2 = rad1;
-	if (radfire < a2 + a && radfire > a2)
-		a1[1] = 1;
-	if (a1[1] == a1[0])
-	{
-		state = 1;
-		return 0;
-	}
+	double A;
+	int fire = 0;
+	int wturn = 0;
+	aa a;
+	A = howfar(B.x, B.y, o.x, o.y);
 	if (state == 0)
-	{	
-		a = radother + 1;
-		if (tAngle(radother, radfire) > tAngle(AngleAdjust(a), radfire))
-			return -1;
+	{
+		if (A <= o.r) 
+		{
+			fire = 1; 
+			double ro0;
+			ro0 = getAngle(B, o);
+			double rf0;
+			rf0 = AnglePlus(rf, -ro0);
+			if (rf0 > 0) wturn = -1;
+			else wturn = 1;
+
+		}
 		else
-			return  1;
+		{
+			double ro;
+			ro = RadianToAngle(asin(o.r / A));
+			double ro0;
+			ro0 = getAngle(B, o);
+			double rf0;
+			rf0 = AnglePlus(rf, -ro0);
+			if (abs(rf0) > 2.5 + ro)
+			{
+				fire = 0;
+				if (rf0 > 0) wturn = -1;
+				else wturn = 1;
+			}
+			if (abs(rf0) <= 2.5 + ro && abs(rf0) >= ro - 2.5)
+			{
+				double a;
+				a = (ro - abs(rf0) + 2.5) / 5;
+				if (a > 0.9) fire = 1;
+				else  fire = 0;
+				if (rf0 > 0) wturn = -1;
+				else wturn = 1;
+			}
+			if (abs(rf0) < ro - 2.5) fire = 1;
+		}
 	}
+	else
+	{
+		if (A <= o.r)
+		{ 
+			fire = 0; 
+			double ro0;
+			ro0 = getAngle(B, o);
+			double rf0;
+			rf0 = AnglePlus(rf, -ro0);
+			if (rf0 > 0) wturn = 1;
+			else wturn = -1;
+		}
+		else
+		{
+			double ro;
+			ro = RadianToAngle(asin(o.r / A));
+			double ro0;
+			ro0 = getAngle(B, o);
+			double rf0;
+			rf0 = AnglePlus(rf, -ro0);
+			if (abs(rf0) > 2.5 + ro) fire = 1;
+			if (abs(rf0) <= 2.5 + ro && abs(rf0) >= ro - 2.5)
+			{
+				double a;
+				a = (abs(rf0) - ro + 2.5) / 5;
+				if (a > 0.9) fire = 1;
+				else  fire = 0;
+				if (rf0 > 0) wturn = 1;
+				else wturn = -1;
+			}
+			if (abs(rf0) < ro - 2.5) 
+			{
+				fire = 0; 
+				if (rf0 > 0) wturn = 1;
+				else wturn = -1;
+			}
+		}
+	}
+	a.x = fire;
+	a.y = wturn;
+	return a;
 }
 
-void controlfire(Circle mypoint, Circle otherpoint, double radfire, int&fire, int&wturn)
+void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn)
 {
 	fire = 0;
-	bool state = 0;
-	bool state1 = 1;//未有障碍物
-	Circle A;
-	A.x = otherpoint.x - mypoint.x;
-	A.y = otherpoint.y - mypoint.y;
-	A.r = sqrt(A.x*A.x + A.y*A.y);
-	double  ins;
-	ins = (otherpoint.r - A.r*0.04366) / (otherpoint.y*0.04366 + A.r);
-	double radins = atan(ins) * 180 / PI;
-	radins -= radins*A.r / 1450;
-	double radother = getAngle(mypoint, otherpoint);
-	wturn = turnfire(radfire, radother, radins, state);
-	if (state == 1)
-	{
-		//A.r*sin(asin(77 / A.r) + 2.5)
-		bool aa = 0;
-		Circle b[2] = { 300, 250, 80 + A.r / 1400 * 10, 1066, 430, 80+A.r / 1400 * 10 };
-		double rad3, rad4;
-		rad3 = getAngle(mypoint, b[0]);
-		rad4 = getAngle(mypoint, b[1]);
-		Beam line = { 0 };
-		line.x = mypoint.x;
-		line.y = mypoint.y;
-		line.rotation = radfire;
-		if (HitTestBeamCircle(line, b[0]) == true && A.r>sqrt((mypoint.x - b[0].x)*(mypoint.x - b[0].x) + (mypoint.y - b[0].y)*(mypoint.y - b[0].y)))
-		{
-			state1 = 0;
-			wturn = -turnfire(radfire, rad3, 0, aa);
-		}
-		if (HitTestBeamCircle(line, b[1]) == true && A.r>sqrt((mypoint.x - b[1].x)*(mypoint.x - b[1].x) + (mypoint.y - b[1].y)*(mypoint.y - b[1].y)))
-		{
-			state1 = 0;
-			wturn = -turnfire(radfire, rad4, 0, aa);
-		}
-	}
-	if (state == 1 && state1 == 1)
-		fire = 1;
+	Circle B = {0};
+	B.x = m.x + 76 * cos(AngleToRadian(rf));
+	B.y = m.y + 76 * sin(AngleToRadian(rf));
+	aa a;
+	a = turnfire(B, rf, o, 0);
+	fire = a.x;
+	wturn = a.y;
+	Circle A[2] = { 300, 250, 75, 1066, 430, 75 };
+	a = turnfire(B, rf, A[0], 1);
+	if (fire == 1) fire = a.x;
+	if (wturn == 0) wturn = a.y;
+	a = turnfire(B, rf, A[1], 1);
+	if (fire == 1) fire = a.x;
+	if (wturn == 0) wturn = a.y;
 
 	}
 
@@ -182,7 +209,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	}*/
 	if (myID == 0)
 	{
-		static int b[2] = { 1, 0 };
+		static int b[2] = { 1, 1 };
+		static int b1 = 0;
 		static int bb[200] = { 0 };
 		if (b[0] == 1 && b[1] == 0)
 			Rright;
@@ -221,17 +249,37 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 						b[0] = 0;
 						bb[i] = 1;
 					}
-					break;
 				}
 				else
 					bb[i] = 0;
 			}
 		}
-		if (m.x > 425 || m.y > 375) b[0] = 0;
+		int d;
+		d = 305;
+		static int d1 = 0;
+		if (info.arsenal[myID].respawning_time == 0)
+		{
+			d = 595;
+			if (m.y > 500 && b1 != 0)
+			{
+				
+				d1++;
+				if (d1 < 22)
+					Rleft;
+			}
+			else
+				d1 = 0;
+
+
+
+
+		}
+		if (m.x > 425 || m.y > d) { b[0] = 0; b1++; }
 	}
 	else
 	{
 		static int b[2] = { 1, 0 };
+		static int b1 = 0;
 		static int bb[200] = { 0 };
 		if (b[0] == 1 && b[1] == 0)
 			Rleft;
@@ -276,8 +324,9 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 					bb[i] = 0;
 			}
 		}
+	//	cout << info.arsenal[1 - myID].circle.x;
 		
-		if (m.x < 941 || m.y <305) b[0] = 0;
+		if (m.x < 941 || m.y < 305) { b[0] = 0; b1++; }
 	}
 
 
@@ -333,7 +382,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "";
+	return "细雨朦胧";
 }
 
 string RobotAI::GetAuthor()

@@ -160,7 +160,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
 	weapon = WT_ElectricSaw   ;	//啊，我爱大电锯
-	engine = ET_GhostTank ;	//啊，我爱幽灵坦克
+	engine = ET_Shuttle  ;	//啊，我爱幽灵坦克
 }
 
 

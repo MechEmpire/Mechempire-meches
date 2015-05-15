@@ -2,7 +2,10 @@
 #include "Aiming.h"
 #include "GeneralFunc.h"
 #include "Battlefield.h"
+#include "TransferData.h"
 #include "UFO.h"
+#include <vector>
+
 
 RobotAI::RobotAI()
 {
@@ -23,93 +26,40 @@ int frame = 0;
 int myID = 0;
 int enemyID = 1;
 
-//int myCurrentX = 0;
-//int myCurrentY = 0;
-
 double myRotationalSpeed = 0;
 double myWpRotSpeed = 0;
 double myAcceleration = 0;
 const double myRadius = 46;
 
-//const int DENSITY_CALCULATE_TIME = 40;
-//double* battlefieldDensity;
-
-
-/*
-void diskBestOperation(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info)
-{
-	double *nextTenMove = new double[1296];
-
-	double bestRes = 1000000;
-	bool isBreak = false;
-	for (int i = 0; i < 1296; i++)
-	{
-		double x = info.robotInformation[myID].circle.x;
-		double y = info.robotInformation[myID].circle.y;
-		double vx = info.robotInformation[myID].vx;
-		double vy = info.robotInformation[myID].vy;
-		double engineAngle = info.robotInformation[myID].engineRotation;
-
-		for (int time = 0; time < 4; time++)
-		{
-			for (int n = 0; n < 10; n++)
-			{
-				int ord = int(i / int(pow(6, time))) % 6;
-				diskMove(info, x, y, vx, vy, engineAngle, ord / 2, transformOrder(ord));
-
-				*(nextTenMove + i) += *(battlefieldDensity + (time * 10 + n) * 620 * 620 + (int(floor(x)) - myCurrentX + 300) * 620 + (int(floor(y)) - myCurrentY + 300));
-				if (*(nextTenMove + i) > bestRes)
-				{
-					break;
-					isBreak = true;
-				}
-			}
-			if (isBreak)
-			{
-				isBreak = false;
-				break;
-			}
-
-		}
-		if (*(nextTenMove + i) < bestRes)
-		{
-			bestRes = *(nextTenMove + i);
-		}
-	}
-
-	double leastVal = *nextTenMove;
-	int leastIndex = 0;
-	for (int i = 1; i < 1296; i++)
-	{
-		if (leastVal > *(nextTenMove + i))
-		{
-			leastVal = *(nextTenMove + i);
-			leastIndex = i;
-			
-		}
-	}
-
-	delete[] nextTenMove;
-	if (abs(leastVal - 0) > 0.00001)
-	{
-		//printf("Frame %i: Will be hit: %f\n", frame, leastVal);
-	}
-	order.run = (leastIndex % 6) / 2;
-	order.eturn = transformOrder(leastIndex % 6);
-}*/
+int enemyAmmoDamage = 0;
+int enemyAmmoCapacity = 0;
+int enemyEngine = -1; // 0 - spider, 1 - robotman, 2 - afv, 3 - ufo, 4 - shuttle
+int enemyWeapon = -1; // 0 - cannon, machinegun, shotgun, plasmatouch, apollo; 1 - prism, tesla; 2 - missilelauncher, 3 - electricsaw, 4 - RPG, 5 - minelayer, 6 - grenadethrower
 
 void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
-	//printf("%i", frame);
-	//myCurrentX = int(floor(info.robotInformation[myID].circle.x));
-	//myCurrentY = int(floor(info.robotInformation[myID].circle.y));
 	updatebulletInfo(info, bullet, bulletNum, enemyID);
-	//updateBattlefieldDensity(info, myCurrentX, myCurrentY, myID, myRadius, DENSITY_CALCULATE_TIME, bullet, bulletNum, battlefieldDensity);
-	if (bulletNum > 0)
+	if (bulletNum > 0 && (info.robotInformation[myID].remainingAmmo >= 4 || info.robotInformation[enemyID].hp <= info.robotInformation[myID].remainingAmmo / 3 * 25))
 	{
 		int ord = ufoHide(bullet, bulletNum, info, myID);
 		order.run = ord % 2;
 		order.eturn = transformOrder(ord);
+	}
+	else if (info.robotInformation[myID].remainingAmmo < 4 && info.robotInformation[enemyID].hp > info.robotInformation[myID].remainingAmmo / 3 * 25)
+	{
+		int wTime = 0;
+		int ord = addAmmoRun(info, myID, enemyID, wTime);
+		if (ord != -1)
+		{
+			order.run = ord % 2;
+			order.eturn = transformOrder(ord);
+		}
+		else
+		{
+			ord = ufoHide(bullet, bulletNum, info, myID);
+			order.run = ord % 2;
+			order.eturn = transformOrder(ord);
+		}
 	}
 	else
 	{
@@ -118,8 +68,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	}
 	order.wturn = aiming(info, info.robotInformation[enemyID].circle.x, info.robotInformation[enemyID].circle.y, myID, myWpRotSpeed);
 	int firePower = fractionHit(info, info.robotInformation[myID].circle.x, info.robotInformation[myID].circle.y, 95, info.robotInformation[myID].weaponRotation, 5, 46, info.robotInformation[enemyID].circle.x, info.robotInformation[enemyID].circle.y);
-	//printf("Frame: %i. Firepower %i\n", frame, firePower);
-	if (firePower % 100 > 50)
+	if (firePower % 100 > 30)
 	{
 		order.fire = 1;
 	}
@@ -132,7 +81,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 
 void RobotAI::ChooseArmor(weapontypename& weapon, enginetypename& engine, bool a)
 {
-	weapon = WT_Machinegun;
+	weapon = WT_Cannon;
 	engine = ET_UFO;
 }
 
@@ -182,13 +131,101 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info, int myID
 	myWpRotSpeed = get_weapon_rotationSpeed(info.robotInformation[myID].weaponTypeName);
 	myAcceleration = get_engine_acceleration(info.robotInformation[myID].engineTypeName);
 
-	//battlefieldDensity = new double[DENSITY_CALCULATE_TIME * 620 * 620]; // DENSITY_CALCULATE_TIME * 620 * 620
+	switch (info.robotInformation[enemyID].engineTypeName)
+	{
+	case ET_Quad:
+	case ET_Spider:
+		enemyEngine = 0;
+		break;
+	case ET_Robotman:
+		enemyEngine = 1;
+		break;
+	case ET_AFV:
+	case ET_GhostTank:
+		enemyEngine = 2;
+		break;
+	case ET_UFO:
+	case ET_XCraft:
+		enemyEngine = 3;
+		break;
+	case ET_Shuttle:
+		enemyEngine = 4;
+		break;
+	}
+
+	switch (info.robotInformation[enemyID].weaponTypeName)
+	{
+	case WT_Apollo:
+	case WT_Cannon:
+	case WT_Machinegun:
+	case WT_PlasmaTorch:
+	case WT_Shotgun:
+		enemyWeapon = 0;
+		break;
+	case WT_Prism:
+	case WT_Tesla:
+		enemyWeapon = 1;
+		break;
+	case WT_MissileLauncher:
+		enemyWeapon = 2;
+		break;
+	case WT_ElectricSaw:
+		enemyWeapon = 3;
+		break;
+	case WT_RPG:
+		enemyWeapon = 4;
+		break;
+	case WT_MineLayer:
+		enemyWeapon = 5;
+		break;
+	case WT_GrenadeThrower:
+		enemyWeapon = 6;
+		break;
+	}
+	enemyAmmoCapacity = get_weapon_ammo(info.robotInformation[enemyID].weaponTypeName);
+	switch (info.robotInformation[enemyID].weaponTypeName)
+	{
+	case WT_Apollo:
+	case WT_Cannon:
+		enemyAmmoDamage = 25;
+		break;
+	case WT_Machinegun:
+		enemyAmmoDamage = 7;
+		break;
+	case WT_PlasmaTorch:
+		enemyAmmoDamage = 18;
+		break;
+	case WT_Shotgun:
+		enemyAmmoDamage = 10;
+		break;
+	case WT_Prism:
+		enemyAmmoDamage = 20;
+		break;
+	case WT_Tesla:
+		enemyAmmoDamage = 22;
+		break;
+	case WT_MissileLauncher:
+		enemyAmmoDamage = 15;
+		break;
+	case WT_ElectricSaw:
+		enemyAmmoDamage = 5;
+		break;
+	case WT_RPG:
+		enemyAmmoDamage = 35;
+		break;
+	case WT_MineLayer:
+		enemyAmmoDamage = 4;
+		break;
+	case WT_GrenadeThrower:
+		enemyAmmoDamage = 25;
+		break;
+	}
+	connect();
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info, int myID)
 {
 	delete[] bullet;
-	//delete[] battlefieldDensity;
 }
 
 void RobotAI::onSomeoneFire(int fireID)

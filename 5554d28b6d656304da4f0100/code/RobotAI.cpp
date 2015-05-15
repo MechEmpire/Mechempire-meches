@@ -33,7 +33,11 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	selfE.x=info.robotInformation[myID].circle.x;
 	selfE.y=info.robotInformation[myID].circle.y;
 
+	army_point.x=info.robotInformation[army].circle.x;
+	army_point.y=info.robotInformation[army].circle.y;
 	
+	self_point.x=info.robotInformation[myID].circle.x;
+	self_point.y=info.robotInformation[myID].circle.y;
 
 
 	
@@ -53,6 +57,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	angleofTwoEngine=sinangle(selfE,armyE);
 	angleBetweenMeLU=sinangle(selfE,barrierLU);
 	angleBetweenMeRD=sinangle(selfE,barrierRD);
+	double angleoffire1=sinangle (selfE,info.arsenal[0].circle);
+	double angleoffire2=sinangle (selfE,info.arsenal[1].circle );
 		
 //	cout<<"连线角度 "<<angleofTwoEngine<<"  ";
 	
@@ -61,6 +67,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	angleE=info.robotInformation[myID].engineRotation;
 	//	cout<<"引擎角度 "<<angleW<<endl;
+
+
 	double sumangle=angleofTwoEngine+angleW;
 	double chaangle=angleofTwoEngine-angleW;
 //	cout<<"我方坐标"<<"("<<selfE.x<<","<<selfE.y<<")";
@@ -148,109 +156,96 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	}
 
 
-//UFO行走
 
+	//run
 
-	//躲避机关枪
-	if (info.robotInformation[army].weaponTypeName==WT_Cannon&&info.robotInformation[army].remainingAmmo>=3)
+	if(selfE.x<barrierLU.x)
 	{
-		disLU=dis(selfE.x,barrierLU.x,selfE.y,barrierRD.y);
-		disRD=dis(selfE.x,barrierRD.x,selfE.y,barrierRD.y);
-		if (disLU<disRD)
+		if (angleE<92&&angleE>88)
 		{
+			order.eturn=0;
+			order.run=1;
+		}
+		else{
+		order.run=0;
+		if (angleE<90)
+		{
+			order.eturn=1;
+
 
 		}
-	}
-	
-
-				if (selfE.y>=armyE.y&&angleE>=0)
-	{
-
-//		cout<<"   我方在下  UFO朝下";
-		
-			if (sumangle2<=180&&sumangle2>=0)
-			{
+		if (angleE>90)
+		{
 				order.eturn=-1;
-//				cout<<"逆时针转"<<endl;
-				
-			}	
-			if (sumangle2>=180&&sumangle2<=360)
-			{
-				order.eturn=1;
-//				cout<<"顺时针转"<<endl;
-			}			
+		}
+		}
+
 	}
-	if (selfE.y>=armyE.y&&angleE<=0)
+	if (selfE.x>barrierRD.x)
 	{
-	
-
-//		cout<<"   我方在下  UFO朝上 ";
-			if (sumangle2>=0)
-			{
-			order.eturn=-1;
-//			cout<<"逆时针转"<<endl;
-			}
-			if (sumangle2<=-1)
-			{
-				order.eturn=1;
-//				cout<<"顺时针转"<<endl;
-			}
-			
-	}
-
-
-	if (selfE.y<=armyE.y&&angleE>=0)
-	{
-
-//		cout<<"   我方在上  UFO朝下 ";
-			if (chaangle2>=0)
+		if (angleE>-92&&angleE<-88)
+		{
+			order.eturn=0;
+			order.run=1;
+		}
+		else
+		{
+			order.run=0;
+		if (angleE<-90)
 		{
 			order.eturn=1;
-//			cout<<"顺时针转"<<endl;
+
+
 		}
-		if (chaangle2<=-1)
+		if (angleE>-90)
 		{
-			order.eturn=-1;
-//			cout<<"逆时针转"<<endl;
+				order.eturn=-1;
+
 		}
-
-		
-	}
-
-
-	if (selfE.y<=armyE.y&&angleE<=0)
-	{
-//		cout<<"   我方在上  UFO朝上 ";
-
-
-			if (chaangle2<180&&chaangle2>=0)
-		{
-			order.eturn=1;
-//			cout<<"顺时针转"<<endl;
 		}
-		if (chaangle2>=180&&chaangle2<=359)
-		{
-			order.eturn=-1;
-//			cout<<"逆时针转"<<endl;
-		}
-
 		
 	}
 	
-	
-
-
-	order.run=1;
-
 	
 	//开火判定
 
-	if (distance<=105+armyE.r&&(fabs(sumangle)<=9||fabs(chaangle)<=9))
-	{
-		order.fire=1;
-		
-	}
+
+	double k=(selfE.y-armyE.y)/(selfE.x-armyE.x);
+	double b=(selfE.y-selfE.x*k);
+	double lu=disLinePoint(k,b,barrierLU);
+	double rd=disLinePoint(k,b,barrierRD);
 	
+	double effectiveshotRadian=asin(armyE.r/distance);
+	double effectiveshotangle=RadianToAngle(effectiveshotRadian);
+	
+	
+	
+
+
+	if (info.robotInformation[myID].remainingAmmo>1)//有弹药
+	{	
+		if ((fabs(sumangle)<=effectiveshotangle||fabs(chaangle)<=effectiveshotangle))
+		{
+			if ((isTwoSide(self_point,army_point,barrierLU)&&lu<=barrierLU.r)||(isTwoSide(self_point,army_point,barrierRD)&&rd<=barrierRD.r))
+			{
+			order.fire=0;
+			}
+			else
+			{
+			
+			order.fire=1;
+
+			}
+
+		
+		}
+
+	}
+	else
+	{
+		
+	
+	}
 }
 
 
@@ -265,8 +260,14 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_ElectricSaw;	
-	engine = ET_UFO;	
+	//weapon = WT_Tesla;	
+	//weapon=WT_PlasmaTorch;
+	//weapon=WT_Cannon;
+	weapon=WT_Prism;
+	//weapon=WT_Apollo;
+	//weapon=WT_Shotgun;
+	//engine = ET_UFO;	
+	engine=ET_Shuttle;
 }
 
 
@@ -287,7 +288,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "疯狂的UFO";
+	return "疯狂的试验品";
 }
 
 string RobotAI::GetAuthor()
@@ -426,7 +427,7 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 	}
 
 
-	double RobotAI::sinangle(Circle &self,Circle& other)
+	double RobotAI::sinangle(Circle &self,const Circle& other)
 	{
 
 		Point c;
@@ -453,7 +454,7 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 	}
 
 
-	void  RobotAI::TurnToPoint(Circle &self,Circle &other,double angleofTwoEngine,double angle,RobotAI_Order& order)
+	void  RobotAI::TurnToPoint(const Circle &self,const Circle &other,double angleofTwoEngine,double angle,RobotAI_Order& order)
 	{
 		double sumangle=angleofTwoEngine+angle;
 		double chaangle=angleofTwoEngine-angle;
@@ -533,4 +534,23 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 	}
 
 
+	}
+
+
+	double RobotAI::disLinePoint(double &k,double& b,const Circle& heart)
+	{
+		return fabs(k*heart.x+b-heart.y)/sqrt(k*k+1);
+	}
+
+	bool RobotAI::isTwoSide(Point &left,Point &right,const Circle &middle)
+
+	{
+		int row=(middle.x-left.x)*(middle.x-right.x);
+		int col=(middle.y-left.y)*(middle.y-right.y);
+		if (row<=0&&col<=0)
+		{
+			return true;
+		}
+		else 
+			return false;
 	}

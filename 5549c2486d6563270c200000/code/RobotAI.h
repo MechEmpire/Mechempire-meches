@@ -120,6 +120,8 @@ public:
 	virtual int AvoidBullet(Circle bu, double vx, double vy, Circle myself);
 	//针对战锤坦克，躲避子弹用
 	virtual int AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
+	//战锤坦克躲加农炮和阿波罗电磁炮
+	virtual int AvoidCannonAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
 
 	//如果有子弹威胁到我
 	virtual bool BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype);
@@ -132,8 +134,10 @@ public:
 	//向敌人进攻！幽浮
 	virtual int runAndrunAFV(Circle me,Circle armor,double engine_rotation);
 	//遇到障碍物
-	virtual bool avoidObstacleAFV(Circle me, Circle obstacle[],const int num_obs);
-
+	virtual int StrikeObstacle(Circle me, Circle obstacle[],const int num_obs);
+	virtual int avoidObstacleAFV(RobotAI_RobotInformation me, Circle obstacle);
+	//遇到墙
+	virtual int avoidWall(RobotAI_RobotInformation me);
 	//确定旋转角方向
 	virtual double howToRotate(Circle me, Circle armor, double weapon_rotation, double vx, double vy);
 

@@ -18,6 +18,13 @@ protected:
 
 	double disLU;
 	double disRD;
+
+	//½Ç¶È
+	double angleofTwoEngine;
+	double angleBetweenMeLU;
+	double angleBetweenMeRD;
+	double angleW;
+	double angleE;
 	 int count;
 
 public:
@@ -129,7 +136,7 @@ public:
 
 	bool HitTestCircles( Circle &c1, const Circle &c2);
 	double dis(double  x1,double x2,double y1,double y2);
-
-
+	double sinangle(Circle &self,Circle& other);
+	void  TurnToPoint(Circle &self,Circle &other,double angleofTE,double angle,RobotAI_Order& order);
 
 };
