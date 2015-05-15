@@ -91,7 +91,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon=WT_PlasmaTorch ;	//啊，我爱加农炮
+	weapon=WT_Prism ;	//啊，我爱加农炮
 	engine=ET_GhostTank;	//啊，我爱小蜘蛛
 }
 

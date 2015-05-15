@@ -80,11 +80,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		switch (enemy_weapon)
 		{
 		case WT_Tesla:
-			dest = enemy;
-			break;
 		case WT_Prism:
-			dest = enemy;
-			break;
 		case WT_MissileLauncher:
 			dest = enemy;
 			break;
@@ -135,11 +131,19 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		if (bullet.launcherID == 1 - myID){
 			double vx = info.robotInformation[myID].vx;
 			double vy = info.robotInformation[myID].vy;
-			if (block(bullet.circle, me, bullet.rotation)){
-				if (dtheta(me_rotation, atan2(vy, vx)) > 0)
-					order.eturn = -1;
-				else
+			bool fire = true;
+			if (block(bullet.circle, info.obstacle[0], bullet.rotation) && distance(bullet.circle, info.obstacle[0]) < distance(bullet.circle, me))
+				fire = false;
+			if (block(bullet.circle, info.obstacle[1], bullet.rotation) && distance(bullet.circle, info.obstacle[1]) < distance(bullet.circle, me))
+				fire = false;
+			double bullettheta = theta(me, bullet.circle);
+			double bulletdtheta = dtheta(atan2(vy, vx), bullettheta);
+
+			if (block(bullet.circle, me, bullet.rotation) && fire){
+				if (bulletdtheta > 0)
 					order.eturn = 1;
+				else
+					order.eturn = -1;
 				break;
 			}
 		}

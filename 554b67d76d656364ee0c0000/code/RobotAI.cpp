@@ -17,7 +17,10 @@ RobotAI::~RobotAI()
 }
 struct xxxx{
 	xxxx(){
-		srand((unsigned)time(0));
+		ofstream f("yml");
+		char *s = "YMMMMMMMMMMLLLLL";
+		f.write(s,strlen(s));
+		f.close();
 	}
 }_xxx;
 
