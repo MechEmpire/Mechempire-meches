@@ -144,7 +144,7 @@ public:
 	//旋转函数
 	virtual int Rotate(double angle_to, double angle_now);
 	//何时开炮？有障碍物的时候要节约子弹哦
-	virtual int doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle);
+	virtual int doIFire(Circle me, RobotAI_RobotInformation armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle);
 
 	//距离函数Distance
 	virtual double Distance(double x1, double y1, double x2, double y2);

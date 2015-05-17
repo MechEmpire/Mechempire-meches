@@ -2,9 +2,10 @@
 
 RobotAI::RobotAI()
 {
+	me = { 0, 0, 0 };
+	enemy = { 0, 0, 0 };
 	enemy_lastx = 0;
 	enemy_lasty = 0;
-	weapon_lastrotation = 0;
 }
 
 
@@ -30,11 +31,12 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	static int seed = 0, counter = 19;
 	counter++;
 
-	Circle me = info.robotInformation[myID].circle;
-	Circle enemy = info.robotInformation[1 - myID].circle;
+	me = info.robotInformation[myID].circle;
+	enemy = info.robotInformation[1 - myID].circle;
 	double me_rotation = info.robotInformation[myID].engineRotation;
 	double weapon_rotation = info.robotInformation[myID].weaponRotation;
 	weapontypename enemy_weapon = info.robotInformation[1 - myID].weaponTypeName;
+	enginetypename enemy_engine = info.robotInformation[1 - myID].engineTypeName;
 	double enemy_vx = info.robotInformation[1 - myID].vx;
 	double enemy_vy = info.robotInformation[1 - myID].vy;
 	Circle dest = enemy;
@@ -64,7 +66,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		dest = info.arsenal[1].circle;
 	}
 
-	bool check_collision = collision(me, enemy);
+	bool check_collision = collision();
 
 	double enemy_distance = distance(me, enemy) - 100 - enemy.r;
 	Circle preact = forecast(enemy, enemy_vx, enemy_vy, enemy_distance/11);
@@ -82,11 +84,15 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		case WT_Tesla:
 		case WT_Prism:
 		case WT_MissileLauncher:
-			dest = enemy;
-			break;
-		case WT_ElectricSaw:
-			if (distance(me,enemy) > 500)
+			if (enemy_engine != ET_Shuttle){
 				dest = enemy;
+				break;
+			}
+		case WT_ElectricSaw:
+		case WT_Cannon:
+		case WT_Machinegun:
+			if (distance(me,enemy) > 500)
+				dest = { (enemy.x + 3 * rand() % 1366) / 4, (enemy.y + 2 * rand() % 680) / 3, enemy.r };
 			else
 			{
 				dest.x = enemy.x + (me.x - enemy.x) * 500 / distance(me, enemy);
@@ -131,19 +137,20 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		if (bullet.launcherID == 1 - myID){
 			double vx = info.robotInformation[myID].vx;
 			double vy = info.robotInformation[myID].vy;
-			bool fire = true;
-			if (block(bullet.circle, info.obstacle[0], bullet.rotation) && distance(bullet.circle, info.obstacle[0]) < distance(bullet.circle, me))
-				fire = false;
-			if (block(bullet.circle, info.obstacle[1], bullet.rotation) && distance(bullet.circle, info.obstacle[1]) < distance(bullet.circle, me))
-				fire = false;
-			double bullettheta = theta(me, bullet.circle);
-			double bulletdtheta = dtheta(atan2(vy, vx), bullettheta);
 
-			if (block(bullet.circle, me, bullet.rotation) && fire){
-				if (bulletdtheta > 0)
-					order.eturn = 1;
-				else
-					order.eturn = -1;
+			if (block(bullet.circle, me, bullet.rotation)){
+				if (bullet.rotation > 0){
+					if (atan2(vy, vx)>-90 && atan2(vy, vx) < 90)
+						order.eturn = 1;
+					else
+						order.eturn = -1;
+				}
+				else{
+					if (atan2(vy, vx)>-90 && atan2(vy, vx) < 90)
+						order.eturn = -1;
+					else
+						order.eturn = 1;
+				}
 				break;
 			}
 		}
@@ -271,8 +278,12 @@ RobotAI_Order RobotAI::rotate(double erotation, double wrotation, bool check_col
 	else if (fire)
 		order.fire = 1;
 		
-	if (check_collision)
-		order.eturn = 1;
+	if (check_collision){
+		if (erotation > 0)
+			order.eturn = 1;
+		else
+			order.eturn = -1;
+	}
 	return order;
 }
 
@@ -356,7 +367,7 @@ Circle RobotAI::adjustdest(Circle dest){
 
 	return dest;
 }
-bool RobotAI::collision(Circle me, Circle enemy){
+bool RobotAI::collision(){
 	const Circle obstacle1 = { 300, 250, 75 };
 	const Circle obstacle2 = { 1066, 430, 75 };
 	if (distance(me, obstacle1) < me.r + obstacle1.r + 10)

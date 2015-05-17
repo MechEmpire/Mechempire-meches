@@ -136,7 +136,7 @@ public:
 
 	bool HitTestCircles( Circle &c1, const Circle &c2);
 	double dis(double  x1,double x2,double y1,double y2);
-	double sinangle(Circle &self,Circle& other);
-	void  TurnToPoint(Circle &self,Circle &other,double angleofTE,double angle,RobotAI_Order& order);
+	double sinangle(const Circle &self,const Circle& other);
+	void  TurnToPoint(const Circle &self,const Circle &other,double angleofTE,double angle,RobotAI_Order& order);
 
 };

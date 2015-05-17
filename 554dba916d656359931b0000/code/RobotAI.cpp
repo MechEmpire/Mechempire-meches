@@ -2,10 +2,7 @@
 #include "Aiming.h"
 #include "GeneralFunc.h"
 #include "Battlefield.h"
-#include "TransferData.h"
 #include "UFO.h"
-#include <vector>
-
 
 RobotAI::RobotAI()
 {
@@ -220,7 +217,6 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info, int myID
 		enemyAmmoDamage = 25;
 		break;
 	}
-	connect();
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info, int myID)

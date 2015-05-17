@@ -169,7 +169,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	if (info.robotInformation[myID].remainingAmmo>0)//有弹药
 	
-	if (distance<=850+armyE.r&&(fabs(sumangle)<=9||fabs(chaangle)<=9))
+	if (distance<=850+armyE.r&&(fabs(sumangle)<=5||fabs(chaangle)<=5))
 	{
 		if ((case2plu<0&&lu<=barrierLU.r)||(case2prd<0&&rd<=barrierRD.r))
 		{

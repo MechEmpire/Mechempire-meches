@@ -130,7 +130,7 @@ void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn)
 	a = turnfire(B, rf, o, 0);
 	fire = a.x;
 	wturn = a.y;
-	Circle A[2] = { 300, 250, 75, 1066, 430, 76 };
+	Circle A[2] = { 300, 250, 76, 1066, 430, 76 };
 	if (howfar(B.x, B.y, A[0].x, A[0].y) <= howfar(B.x, B.y, o.x, o.y))
 	{
 		a = turnfire(B, rf, A[0], 1);
@@ -219,9 +219,77 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		{
 			double a1;
 			a1 = o.y - 180;
-			if (a1 < 125) a1 = 125 + (125 - a1) / 3.5;
+			if (a1 < 125) a1 = 125 + (125 - a1) / 3.5 ;
 			if (m.y < a1)Rdown;
 			if (m.y > a1)Rup;
+			if (a1 > 375 && a1 < 225)
+			{
+				if (a1>375)
+				{
+					double b;
+					b = info.robotInformation[myID].cooling;
+					b = a1 - 2 * b;
+					static int c = 1;
+					if (order.fire == 1) c = 1;//0向下
+					if (m.y >= a1) c = 1;
+					if (m.y <= b) c = 0;
+					double c1[200] = { 0 };
+					for (int i = 0; i < info.num_bullet; ++i)
+					{
+						if (a[i].launcherID == 1 - myID)
+						{
+
+							Beam A = { a[i].circle.x, a[i].circle.y, a[i].rotation };
+							Circle B = { 300, 250, 75 };
+							if (HitTestBeamCircle(A, B) == true)continue;
+							c1[i] = howfar(A.x, A.y, m.x, m.y);
+							if (c1[i] < 125)c = 1;
+						}
+					}
+					static int t1 = 0, ct = c;
+					if (ct != c || t1 != 0)
+					{
+						if (t1 == 0) ct = c;
+						if (t1 < 5){ t1++; c = ct; }
+						if (t1 == 5){ t1 = 0; }
+					}
+					if (c == 0)Rdown;
+					if (c == 1)Rup; 
+				}
+				else
+				{
+					double b;
+					b = info.robotInformation[myID].cooling;
+					b = a1 + 2 * b;
+					static int c = 1;
+					if (order.fire == 1) c = 0;//0向下
+					if (m.y <= a1) c = 0;
+					if (m.y >= b) c = 0;
+					double c1[200] = { 0 };
+					for (int i = 0; i < info.num_bullet; ++i)
+					{
+						if (a[i].launcherID == 1 - myID)
+						{
+
+							Beam A = { a[i].circle.x, a[i].circle.y, a[i].rotation };
+							Circle B = { 300, 250, 75 };
+							if (HitTestBeamCircle(A, B) == true)continue;
+							c1[i] = howfar(A.x, A.y, m.x, m.y);
+							if (c1[i] < 125)c = 0;
+						}
+					}
+					static int t1 = 0, ct = c;
+					if (ct != c || t1 != 0)
+					{
+						if (t1 == 0) ct = c;
+						if (t1 < 5){ t1++; c = ct; }
+						if (t1 == 5){ t1 = 0; }
+					}
+					if (c == 0)Rdown;
+					if (c == 1)Rup;
+				}
+			}
+			
 		}
 		if (o.x <= 916 && o.x >= 475)
 		{
@@ -349,7 +417,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 						if (c1[i] < 125)c = 1;
 					}
 				}
-				static int t1 = 0, ct = 1;
+				static int t1 = 0, ct = c;
 				if (ct != c || t1 != 0)
 				{
 					if (t1 == 0) ct = c;
@@ -387,7 +455,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 				
 
 			}*/
-			order.wturn = -order.wturn;
 			static int c = 0;//逆
 			if (m.y < 250)c = 0;
 			if (m.y >= 250) c = 1;
@@ -429,6 +496,70 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			if (a1 > 555) a1 = 555 - ( a1 - 555) / 3.5;
 			if (m.y < a1)Rdown;
 			if (m.y > a1)Rup;
+			if (a1>505)
+			{
+				double b;
+				b = info.robotInformation[myID].cooling;
+				b = a1 - 2 * b;
+				static int c = 1;
+				if (order.fire == 1) c = 1;//0向下
+				if (m.y >= a1) c = 1;
+				if (m.y <= b) c = 0;
+				double c1[200] = { 0 };
+				for (int i = 0; i < info.num_bullet; ++i)
+				{
+					if (a[i].launcherID == 1 - myID)
+					{
+
+						Beam A = { a[i].circle.x, a[i].circle.y, a[i].rotation };
+						Circle B = { 300, 250, 75 };
+						if (HitTestBeamCircle(A, B) == true)continue;
+						c1[i] = howfar(A.x, A.y, m.x, m.y);
+						if (c1[i] < 125)c = 1;
+					}
+				}
+				static int t1 = 0, ct = c;
+				if (ct != c || t1 != 0)
+				{
+					if (t1 == 0) ct = c;
+					if (t1 < 5){ t1++; c = ct; }
+					if (t1 == 5){ t1 = 0; }
+				}
+				if (c == 0)Rdown;
+				if (c == 1)Rup;
+			}
+			if (a1>355)
+			{
+				double b;
+				b = info.robotInformation[myID].cooling;
+				b = a1 + 2 * b;
+				static int c = 1;
+				if (order.fire == 1) c = 0;//0向下
+				if (m.y <= a1) c = 0;
+				if (m.y >= b) c = 0;
+				double c1[200] = { 0 };
+				for (int i = 0; i < info.num_bullet; ++i)
+				{
+					if (a[i].launcherID == 1 - myID)
+					{
+
+						Beam A = { a[i].circle.x, a[i].circle.y, a[i].rotation };
+						Circle B = { 300, 250, 75 };
+						if (HitTestBeamCircle(A, B) == true)continue;
+						c1[i] = howfar(A.x, A.y, m.x, m.y);
+						if (c1[i] < 125)c = 0;
+					}
+				}
+				static int t1 = 0, ct = c;
+				if (ct != c || t1 != 0)
+				{
+					if (t1 == 0) ct = c;
+					if (t1 < 5){ t1++; c = ct; }
+					if (t1 == 5){ t1 = 0; }
+				}
+				if (c == 0)Rdown;
+				if (c == 1)Rup;
+			}
 		}
 		if (o.x >= 450 && o.x <= 891)
 		{
@@ -555,7 +686,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 						if (c1[i] < 125)c = 1;
 					}
 				}
-				static int t1 = 0, ct = 1;
+				static int t1 = 0, ct = c;
 				if (ct != c || t1 != 0)
 				{
 					if (t1 == 0) ct = c;
@@ -568,7 +699,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		}
 		if (o.x > 891 && o.y > 255)
 		{
-			order.wturn = -order.wturn;
+		
 			static int c = 0;//逆
 			if (m.y < 430)c = 1;
 			if (m.y >= 430) c = 0;

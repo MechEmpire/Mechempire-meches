@@ -44,7 +44,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	//针对太空要塞做优化，贴近点打！
 	if( armor.engineTypeName != ET_Shuttle)
-		order.fire = doIFire(me.circle, armor.circle, obs, info.num_obstacle, me.weaponRotation, fire_angle);
+		order.fire = doIFire(me.circle, armor, obs, info.num_obstacle, me.weaponRotation, fire_angle);
 	else{
 		if(distance_me_armor > 700)
 			order.fire = 0;
@@ -62,14 +62,29 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		
 	//判断距离，不能太近	
 	double min_dist = 350;
-	if(armor.weaponTypeName == WT_ElectricSaw || armor.weaponTypeName == WT_Machinegun)
+	if(armor.weaponTypeName == WT_Machinegun || armor.weaponTypeName == WT_Shotgun || armor.weaponTypeName == WT_ElectricSaw)
 		min_dist = 500;
-	//打猥琐飞弹和光棱和磁暴只要贴脸干！其他的要远离，尤其是电锯！
-	if(armor.weaponTypeName != WT_MissileLauncher && armor.weaponTypeName !=WT_Prism && armor.weaponTypeName !=WT_Tesla){
+	if(armor.weaponTypeName == WT_Cannon || armor.weaponTypeName == WT_Cannon || armor.weaponTypeName == WT_Tesla)
+		min_dist = 500;
+	//打猥琐飞弹和光棱只要贴脸干！其他的要远离，尤其是电锯！
+	if(armor.weaponTypeName != WT_MissileLauncher && armor.weaponTypeName !=WT_Prism){
 		if(distance_me_armor <= min_dist)//太近了就往回走
 			order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
 	}
-
+	//靠墙？
+	if(me.circle.x <= 60 || me.circle.y <= 60 || 680 - me.circle.y <= 60 || 1366 - me.circle.x <= 60)
+		order.eturn = avoidWall(me);
+	//遇到障碍物？
+	int obs_n = StrikeObstacle(me.circle, obs, info.num_obstacle);
+	if(obs_n != -1)
+		order.eturn = avoidObstacleAFV(me, obs[obs_n]);
+	//检查子弹打光没	
+	if(info.robotInformation[myID].remainingAmmo <= 2 )
+	{
+		//没子弹了就去仓库领取
+		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1],
+			me.circle),me.engineRotation);
+	}
 	//等等！有子弹再打我？
 	//Circle bu[200];
 	int bu_num = info.num_bullet;
@@ -87,21 +102,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			}
 		}
 	}
-	
-	//靠墙？
-	if(me.circle.x <= 60 || me.circle.y <= 60 || 680 - me.circle.y <= 60 || 1366 - me.circle.x <= 60)
-		order.eturn = avoidWall(me);
-	//检查子弹打光没	
-	if(info.robotInformation[myID].remainingAmmo <= 2 )
-	{
-		//没子弹了就去仓库领取
-		order.eturn = runAndrunAFV(me.circle, whichArsenal(info.arsenal[0], info.arsenal[1],
-			me.circle),me.engineRotation);
-	}
-	//遇到障碍物？
-	int obs_n = StrikeObstacle(me.circle, obs, info.num_obstacle);
-	if(obs_n != -1)
-		order.eturn = avoidObstacleAFV(me, obs[obs_n]);
 	
 	
 	if(queue_lastFivePoint.size() >= 5)//仅保存5个点
@@ -124,10 +124,6 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	weapon = WT_Cannon;	//啊，我爱旋转机枪
 	engine = ET_AFV;	//啊，我爱战锤坦克
 }
-
-
-
-
 
 
 
@@ -222,6 +218,10 @@ void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID)
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//system("pause");
+	for(int i = 0; i < 5; i++)
+	{
+		queue_lastFivePoint.pop();
+	}
 }
 
 
@@ -311,7 +311,7 @@ bool RobotAI::BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontyp
 {
 	int min_dis = 350;
 	if(weapontype == WT_Apollo || weapontype == WT_RPG || weapontype == WT_Cannon)
-		min_dis = 550;
+		min_dis = 650;
 	//打向我的角度
 	double bulletAngle = atan2(vy,vx) * 180 / PI;
 	//我与子弹的角度
@@ -372,7 +372,7 @@ int RobotAI::AvoidCannonAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformati
 		bu_angle += 90;
 	else                             //子弹攻击下方
 		bu_angle -= 90;
-	AngleAdjust(bu_angle);
+	bu_angle = AngleAdjust(bu_angle);
 	return Rotate(bu_angle, me.engineRotation);
 }
 //遇到墙
@@ -385,7 +385,7 @@ int RobotAI::avoidWall(RobotAI_RobotInformation me)
 		if(Rotate(-90, me.engineRotation) == 1)
 			angle = -145;
 		else
-			angle = 45;
+			angle = -45;
 	}else if(me.circle.y <= 70){
 		if(Rotate(90, me.engineRotation) == 1)
 			angle = 45;
@@ -398,9 +398,9 @@ int RobotAI::avoidWall(RobotAI_RobotInformation me)
 			angle = 45;
 	}else if(1366 - me.circle.x <= 70)
 		if(Rotate(180, me.engineRotation) == 1)
-			angle = 45;
+			angle = 135;
 		else
-			angle = -45;	
+			angle = -135;	
 	return Rotate(angle, me.engineRotation);
 }
 //确定旋转角方向,旋转机枪Mashinegun射速11,返回应该旋转的角度
@@ -409,7 +409,7 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 	double angle = atan2(armor.y - me.y, armor.x - me.x) * 180 / PI;//我和敌人之间的角度
 	double v1Angle;//敌人速度方向
 	double offset = 0;//这是偏移角
-	double dist_factor = 0.550;//修正因子,根据我的想法和距离来调整
+	double dist_factor = 0.500;//修正因子,根据我的想法和距离来调整
 	double armor_move = Distance(queue_lastFivePoint.front().x, queue_lastFivePoint.front().y,
 		queue_lastFivePoint.back().x, queue_lastFivePoint.back().y);//敌人前5帧运动的长度
 	if( armor_move > 6)//当敌人运动的时候计算偏移角
@@ -455,16 +455,20 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 }
 
 //何时开炮？有障碍物的时候要节约子弹哦
-int RobotAI::doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle)
+int RobotAI::doIFire(Circle me, RobotAI_RobotInformation armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle)
 {
+	double min_dist = 1000;
+	if(armor.weaponTypeName == WT_Cannon || armor.weaponTypeName == WT_Cannon)
+		min_dist = 2000;
 	if( abs(now_angle - fire_angle) > 10 )//角度太偏就不射
 		return 0;
+	
 	double A,C,dis;
 	Circle obs;
-	double distWithAr = Distance(me.x, me.y, armor.x, armor.y), //与敌人的距离
+	double distWithAr = Distance(me.x, me.y, armor.circle.x, armor.circle.y), //与敌人的距离
 		distWithObs1 = Distance(me.x, me.y, obstacle[0].x, obstacle[0].y),
 		distWithObs2 = Distance(me.x, me.y, obstacle[1].x, obstacle[1].y),distWithObs;
-	if(distWithAr >= 1000)//距离太远就不打！
+	if(distWithAr > min_dist)//太远就不射
 		return 0;
 	if(distWithObs1 < distWithObs2)
 	{
@@ -480,10 +484,9 @@ int RobotAI::doIFire(Circle me, Circle armor,Circle obstacle[],int num_obs,doubl
 	C = me.y - A * me.x;
 	dis = abs(A * obs.x - obs.y + C) / sqrt( A * A + 1 );//直线到圆心的距离	
 	
-	if( dis <= obs.r && distWithAr > distWithObs)//判断子弹是否被挡住
-	{		
+	if( dis <= obs.r && distWithAr > distWithObs)//判断子弹是否被挡住		
 		return 0;
-	}
+	
 	return 1;
 }
 //选则一个可以去的军火库

@@ -33,6 +33,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	double me_rotation = info.robotInformation[myID].engineRotation;
 	double weapon_rotation = info.robotInformation[myID].weaponRotation;
 	weapontypename enemy_weapon = info.robotInformation[1 - myID].weaponTypeName;
+	enginetypename enemy_engine = info.robotInformation[1 - myID].engineTypeName;
 	double enemy_vx = info.robotInformation[1 - myID].vx;
 	double enemy_vy = info.robotInformation[1 - myID].vy;
 	Circle dest = enemy;
@@ -73,8 +74,10 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		case WT_Prism:
 		case WT_Tesla:
 		case WT_MissileLauncher:
-			dest = enemy;
-			break;
+			if (enemy_engine != ET_Shuttle){
+				dest = enemy;
+				break;
+			}
 		default:
 			if (distance(me, enemy) > 500){
 				if (info.robotInformation[myID].cooling < 10 || info.robotInformation[1 - myID].remainingAmmo < 1)
@@ -132,19 +135,20 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		if (bullet.launcherID == 1 - myID){
 			double vx = info.robotInformation[myID].vx;
 			double vy = info.robotInformation[myID].vy;
-			bool fire = true;
-			if (block(bullet.circle, info.obstacle[0], bullet.rotation) && distance(bullet.circle, info.obstacle[0]) < distance(bullet.circle, me))
-				fire = false;
-			if (block(bullet.circle, info.obstacle[1], bullet.rotation) && distance(bullet.circle, info.obstacle[1]) < distance(bullet.circle, me))
-				fire = false;
-			double bullettheta = theta(me, bullet.circle);
-			double bulletdtheta = dtheta(atan2(vy, vx), bullettheta);
 
-			if (block(bullet.circle, me, bullet.rotation) && fire){
-				if (bulletdtheta > 0)
-					order.eturn = 1;
-				else
-					order.eturn = -1;
+			if (block(bullet.circle, me, bullet.rotation)){
+				if (bullet.rotation > 0){
+					if (atan2(vy, vx)>-90 && atan2(vy, vx) < 90)
+						order.eturn = 1;
+					else
+						order.eturn = -1;
+				}
+				else{
+					if (atan2(vy, vx)>-90 && atan2(vy, vx) < 90)
+						order.eturn = -1;
+					else
+						order.eturn = 1;
+				}
 				break;
 			}
 		}
@@ -274,8 +278,12 @@ RobotAI_Order RobotAI::rotate(double erotation, double wrotation, bool check_col
 	else if (fire)
 		order.fire = 1;
 		
-	if (check_collision)
-		order.eturn = 1;
+	if (check_collision){
+		if (erotation > 0)
+			order.eturn = 1;
+		else
+			order.eturn = -1;
+	}
 	return order;
 }
 
@@ -321,14 +329,14 @@ Circle RobotAI::forecast(Circle robot, double vx, double vy, double time){
 		preact.y = robot.y + vy * time;
 	}
 
-	if (preact.x < 125)
-		preact.x = 125;
-	else if (preact.x > 1240)
-		preact.x = 1240;
-	if (preact.y < 125)
-		preact.y = 125;
-	else if (preact.y > 555)
-		preact.y = 555;
+	if (preact.x < 50)
+		preact.x = 50;
+	else if (preact.x > 1316)
+		preact.x = 1316;
+	if (preact.y < 50)
+		preact.y = 50;
+	else if (preact.y > 630)
+		preact.y = 630;
 
 	return preact;
 }

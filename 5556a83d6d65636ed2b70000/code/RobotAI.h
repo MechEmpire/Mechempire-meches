@@ -1,17 +1,24 @@
 #pragma once
 
 #include "RobotAI_Interface.h"
+struct aa
+{
+	int x; 
+	int y;
+};
+double howfar(double x, double y, double x1, double y1);
+double tAngle(double angle1, double angle2);
+double getAngle(Circle a, Circle b);
+aa turnfire(Circle B, double rf, Circle o, int state);
+void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn);
 
 
 
-class RobotAI :public RobotAI_Interface
+class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
-	Circle me;
-	Circle enemy;
-	double enemy_lastx;
-	double enemy_lasty;
+
 
 public:
 
@@ -119,16 +126,12 @@ public:
 
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
+	
 
 
-	virtual RobotAI_Order rotate(double, double, bool, bool);
-	virtual double distance(double, double, double, double);
-	virtual double distance(Circle, Circle);
-	virtual double theta(double, double, double, double);
-	virtual double theta(Circle, Circle);
-	virtual double dtheta(double, double);
-	virtual Circle forecast(Circle, double, double, double);
-	virtual bool block(Circle, Circle, double);
-	virtual Circle adjustdest(Circle);
-	virtual bool collision();
+
+
+
 };
+
+

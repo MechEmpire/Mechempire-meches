@@ -1,5 +1,4 @@
 #include "Aiming.h"
-#include "Battlefield.h"
 
 int aiming(const RobotAI_BattlefieldInformation& info, const double aimingX, const double aimingY, const int myID, const double myWpRotSpeed)
 {
@@ -186,81 +185,4 @@ void forecastPosition(const RobotAI_BattlefieldInformation& info, int myID)
 	case ET_Shuttle:
 		break;
 	}
-}
-
-int forecastPositionUsingVelocity(const RobotAI_BattlefieldInformation& info, const int myID, double &x, double &y, const double vx, const double vy, const double bulletSpeed, const double myWpRotSpeed, const double wpLength, int &weaponRotation)
-{
-	int bestPosi[2];
-	int bestTime = 0;
-	int bestValue = 10000;
-	for (int i = 0; i < 200; i++)
-	{
-		x += vx;
-		y += vy;
-		if (isOutOfMap(info, x, y))
-		{
-			break;
-		}
-		if (abs(sqrt(pow(info.robotInformation[myID].circle.x - x, 2) + pow(info.robotInformation[myID].circle.y - y, 2)) - i * bulletSpeed - wpLength / bulletSpeed) < bestValue)
-		{
-			bestValue = abs(sqrt(pow(info.robotInformation[myID].circle.x - x, 2) + pow(info.robotInformation[myID].circle.y - y, 2) - wpLength) - i * bulletSpeed);
-			bestTime = i;
-			bestPosi[0] = x;
-			bestPosi[1] = y;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	if (bestValue > 20)
-	{
-		return -1;
-	}
-	else
-	{
-		x = bestPosi[0];
-		y = bestPosi[1];
-		weaponRotation = aiming(info, bestPosi[0], bestPosi[1], myID, myWpRotSpeed);
-		return bestTime;
-	}
-}
-
-int forecastSpiderRange(const RobotAI_BattlefieldInformation& info, const int myID, const double bulletSpeed, const double wpLength, double posList[])
-{
-	double enemyX = info.robotInformation[1 - myID].circle.x;
-	double enemyY = info.robotInformation[1 - myID].circle.y;
-	double myX = info.robotInformation[myID].circle.x;
-	double myY = info.robotInformation[myID].circle.y;
-	double contour[63][2];
-
-	int time = int(ceil(sqrt(pow(enemyX - myX, 2) + pow(enemyY - myY, 2) - wpLength) / bulletSpeed));
-	double posiRange = time * 4;
-
-	for (int i = 0; i < 63; i++)
-	{
-		double enemyXvary = enemyX;
-		double enemyYvary = enemyY;
-		double vx = posiRange * cos(i * 0.1) / 100;
-		double vy = posiRange * sin(i * 0.1) / 100;
-		for (int j = 0; j < 100; j++)
-		{
-			enemyXvary += vx;
-			enemyYvary += vy;
-			if (isOutOfMap(info, enemyXvary, enemyYvary))
-			{
-				break;
-			}
-		}
-		contour[i][0] = enemyXvary - vx;
-		contour[i][1] = enemyYvary - vy;
-	}
-
-	for (int i = 0; i < 10; i++)
-	{
-		posList[i * 2] = contour[i * 6][0];
-		posList[i * 2 + 1] = contour[i * 6][1];
-	}
-	return time;
 }

@@ -199,7 +199,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		}
 		if (angleE>-90)
 		{
-				order.eturn=-1;
+				order.eturn=1;
 
 		}
 		}
@@ -222,9 +222,9 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 
 
-	if (info.robotInformation[myID].remainingAmmo>1)//有弹药
+	if (info.robotInformation[myID].remainingAmmo>0)//有弹药
 	{	
-		if ((fabs(sumangle)<=effectiveshotangle||fabs(chaangle)<=effectiveshotangle))
+		if (distance<=1100+armyE.r&&(fabs(sumangle)<=5||fabs(chaangle)<=5))
 		{
 			if ((isTwoSide(self_point,army_point,barrierLU)&&lu<=barrierLU.r)||(isTwoSide(self_point,army_point,barrierRD)&&rd<=barrierRD.r))
 			{
@@ -260,10 +260,10 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	//weapon = WT_Tesla;	
+	weapon = WT_Tesla;	
 	//weapon=WT_PlasmaTorch;
 	//weapon=WT_Cannon;
-	weapon=WT_Prism;
+	//weapon=WT_Prism;
 	//weapon=WT_Apollo;
 	//weapon=WT_Shotgun;
 	//engine = ET_UFO;	

@@ -39,7 +39,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	//距离计算
 	double distance=dis(selfE.x,armyE.x,selfE.y,armyE.y);
-	
+	disLU=dis(selfE.x,barrierLU.x,selfE.y,barrierRD.y);
+	disRD=dis(selfE.x,barrierRD.x,selfE.y,barrierRD.y);
 //	cout<<distance<<"  ";
 
 //	cout<<info.robotInformation[myID].engineRotation<<endl;
@@ -148,14 +149,16 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	}
 
 
-//UFO行走
+
+if (info.robotInformation[myID].remainingAmmo>0)//有弹药
+{
+	//UFO行走
 
 
 	//躲避机关枪
 	if (info.robotInformation[army].weaponTypeName==WT_Cannon&&info.robotInformation[army].remainingAmmo>=3)
 	{
-		disLU=dis(selfE.x,barrierLU.x,selfE.y,barrierRD.y);
-		disRD=dis(selfE.x,barrierRD.x,selfE.y,barrierRD.y);
+		
 		if (disLU<disRD)
 		{
 
@@ -245,12 +248,45 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	//开火判定
 
-	if (distance<=105+armyE.r&&(fabs(sumangle)<=9||fabs(chaangle)<=9))
+	if (distance<=105+armyE.r&&(fabs(sumangle)<=20||fabs(chaangle)<=20))
 	{
 		order.fire=1;
 		
 	}
-	
+}
+
+	else//无弹药
+	{
+		double disfire1=dis(info.arsenal[0].circle.x,selfE.x,info.arsenal[0].circle.y,selfE.y);
+		double disfire2=dis(info.arsenal[1].circle.x,selfE.x,info.arsenal[0].circle.y,selfE.y);
+		double angleoffire1=sinangle (selfE,info.arsenal[0].circle);
+		double angleoffire2=sinangle (selfE,info.arsenal[1].circle );
+
+		if(info.arsenal [0].respawning_time<10&&info.arsenal [1].respawning_time<10)//弹药库均冷却
+		{
+			if(disfire1<disfire2)
+				TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
+			else
+				TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
+
+		}
+		else
+		{
+				if(info.arsenal [0].respawning_time<10)//弹药库1冷却
+			TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
+				else if(info.arsenal [1].respawning_time<10)//弹药库2冷却
+			TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
+				else //均为冷却
+				{
+					
+					if(disLU<disRD)
+						TurnToPoint(selfE,barrierLU,angleBetweenMeLU ,angleE,order);
+					else
+						TurnToPoint(selfE,barrierRD,angleBetweenMeRD ,angleE,order);
+				}
+		}
+		order.run=1;
+	}
 }
 
 
@@ -287,7 +323,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "疯狂的UFO";
+	return "疯狂的UFO  bcdz";
 }
 
 string RobotAI::GetAuthor()
@@ -426,7 +462,7 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 	}
 
 
-	double RobotAI::sinangle(Circle &self,Circle& other)
+	double RobotAI::sinangle(const Circle &self,const Circle& other)
 	{
 
 		Point c;
@@ -453,7 +489,7 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 	}
 
 
-	void  RobotAI::TurnToPoint(Circle &self,Circle &other,double angleofTwoEngine,double angle,RobotAI_Order& order)
+	void  RobotAI::TurnToPoint(const Circle &self,const Circle &other,double angleofTwoEngine,double angle,RobotAI_Order& order)
 	{
 		double sumangle=angleofTwoEngine+angle;
 		double chaangle=angleofTwoEngine-angle;

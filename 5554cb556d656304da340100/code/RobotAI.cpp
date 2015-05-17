@@ -64,11 +64,13 @@ void weapon_rotation(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	
 }
 
-void engine_drive(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID) {
+// x 为目的地横坐标
+// y 为目的地竖坐标
+void engine_drive(double x,double y,RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID) {
 	auto& me = info.robotInformation[myID];
-	auto& target = info.robotInformation[1 - myID];
-	double dx = target.circle.x - me.circle.x;
-	double dy = target.circle.y - me.circle.y;
+	
+	double dx = x - me.circle.x;
+	double dy = y - me.circle.y;
 	double dt = atan2(dy, dx)*180.0 / PI - me.engineRotation;
 	AngleAdjust(dt);
 	const double eps = 1e-3;
@@ -83,6 +85,7 @@ void engine_drive(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 	}
 	order.run = 1;
 }
+
 void obstacle_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
 	auto& me = info.robotInformation[myID];
@@ -169,10 +172,14 @@ void escape_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& i
 }
 
 void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+
 {
+	
+
+	
 	auto& me = info.robotInformation[myID];
 
-	if (me.circle.y -60- me.circle.r == 0)
+	if (me.circle.y -70- me.circle.r == 0)
 	{
 		if (me.engineRotation >270)
 			order.eturn = 1;
@@ -180,7 +187,7 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 			order.eturn = -1;
 	}
 		
-	if (me.circle.y + me.circle.r+60 == info.boundary.height)
+	if (me.circle.y + me.circle.r+70 == info.boundary.height)
 	{
 		if (me.engineRotation >0 && me.engineRotation<90)
 			order.eturn = -1;
@@ -188,7 +195,7 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 			order.eturn = 1;
 	}
 
-	if (me.circle.x + me.circle.r+60 == info.boundary.width)
+	if (me.circle.x + me.circle.r+70 == info.boundary.width)
 	{
 		if (me.engineRotation >0 && me.engineRotation < 90)
 			order.eturn = 1;
@@ -196,7 +203,7 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 			order.eturn = -1;
 	}
 
-	if (me.circle.x - me.circle.r-60 == 0)
+	if (me.circle.x - me.circle.r-70== 0)
 	{
 		if (me.engineRotation >90 && me.engineRotation < 180)
 			order.eturn = -1;
@@ -205,6 +212,50 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 	}
 
 }
+
+void boundry_hit2(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+
+{
+
+
+
+	auto& me = info.robotInformation[myID];
+
+	if (me.circle.y - 5 - me.circle.r == 0)
+	{
+		if (me.engineRotation >270)
+			order.eturn = 1;
+		else if (me.engineRotation >180 && me.engineRotation<270)
+			order.eturn = -1;
+	}
+
+	if (me.circle.y + me.circle.r + 5 == info.boundary.height)
+	{
+		if (me.engineRotation >0 && me.engineRotation<90)
+			order.eturn = -1;
+		else if (me.engineRotation >90 && me.engineRotation <180)
+			order.eturn = 1;
+	}
+
+	if (me.circle.x + me.circle.r + 5 == info.boundary.width)
+	{
+		if (me.engineRotation >0 && me.engineRotation < 90)
+			order.eturn = 1;
+		else if (me.engineRotation >270)
+			order.eturn = -1;
+	}
+
+	if (me.circle.x - me.circle.r - 5 == 0)
+	{
+		if (me.engineRotation >90 && me.engineRotation < 180)
+			order.eturn = -1;
+		else if (me.engineRotation >180 && me.engineRotation < 270)
+			order.eturn = 1;
+	}
+
+}
+
+
 void fire_or_not(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
 	auto& me = info.robotInformation[myID];
@@ -214,9 +265,14 @@ void fire_or_not(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 		order.fire = 1;
 	}
 }
-void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID)
+
+
+
+
+
+void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
-	
+
 	//帧操纵函数
 	//功能：在每一帧被调用，完成你的机甲在这一帧的动作决策
 	//参数：order	...	机甲操纵指令，你在函数体中给它赋值以操纵机甲在这一帧的行为
@@ -225,23 +281,67 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
 	auto& me = info.robotInformation[myID];
 	auto& target = info.robotInformation[1 - myID];
-	weapon_rotation(order, info, myID);
 	
-	if (target.remainingAmmo - me.hp / 25 > 0 && dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) <= 600)
+	//距离军火库距离
+	auto& arsenal = info.arsenal;
+	double dis0_to_arsenal= dis(me.circle.x, me.circle.y, arsenal[0].circle.x, arsenal[0].circle.y);
+	double dis1_to_arsenal = dis(me.circle.x, me.circle.y, arsenal[1].circle.x, arsenal[1].circle.y);
+	int p;
+	if (dis0_to_arsenal < dis1_to_arsenal)
+		p = 0;
+	else
+		p = 1;
+	double flag = 0;
+
+
+	weapon_rotation(order, info, myID);//任何情况下炮口都得对着敌人
+    
+	//目前写的是大炮坦克专杀 && (target.engineTypeName == ET_AFV || target.engineTypeName == ET_GhostTank)
+	if (target.weaponTypeName == WT_Cannon)
 	{
-		order.run = 1;
-		order.eturn = -1;
-	}
+
+		if (info.arsenal[p].respawning_time == 0)
+		{
+			double flag = 1;
+			engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
+		}
+		else
+		{
+
+			if (target.remainingAmmo - me.hp / 25 > 0 && dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) <= 510)
+			{
+				//消耗子弹方案
+				order.run = 1;
+				double dx = target.circle.x - me.circle.x;
+				double dy = target.circle.y - me.circle.y;
+				double dt = atan2(dy, dx)*180.0 / PI - me.engineRotation;
+				AngleAdjust(dt);
+
+				if (dt <= 0 && dt >= -90)
+					order.eturn = 1;
+				else if (dt > 0 && dt <= 90)
+					order.eturn = -1;
+				else
+					engine_drive(target.circle.x, target.circle.y, order, info, myID);
+			}
+			else
+			    engine_drive(target.circle.x, target.circle.y, order, info, myID);
+			
+		}
+	 }
+	
 	else
 	{
-		engine_drive(order, info, myID);
+		engine_drive(target.circle.x, target.circle.y, order, info, myID);
 	}
-	
+
 	obstacle_hit(order, info, myID);
 	
 	escape_bullet(order, info, myID);
-	
-	boundry_hit(order, info, myID);
+	if (flag!=1)
+	   boundry_hit(order, info, myID);
+	else
+	   boundry_hit2(order, info, myID);
 	
 	fire_or_not(order, info, myID);
 
@@ -355,6 +455,8 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 	//一场战斗开始时被调用，可能可以用来初始化
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
+	
+	
 
 }
 

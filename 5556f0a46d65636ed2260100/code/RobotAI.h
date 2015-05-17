@@ -1,18 +1,19 @@
 #pragma once
 
 #include "RobotAI_Interface.h"
+#include <iostream>
 
 
-
-class RobotAI :public RobotAI_Interface
+class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
-	Circle me;
-	Circle enemy;
-	double enemy_lastx;
-	double enemy_lasty;
-
+	int enemyId; // 敌人ID
+	Circle myObj; // 我方障碍物
+	double attackAlarm; // 猥琐的阈值，等于敌方的弹药率
+	double attackDistance; // 与敌人间距小于此阈值时，立即攻击
+	Point farArsenal; // 距离我方较远的那个军火库
+	bool hideForEver;
 public:
 
 	//************************************************
@@ -120,15 +121,14 @@ public:
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
 
+	void hide(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID); // 前期猥琐打法，躲到障碍物后面
 
-	virtual RobotAI_Order rotate(double, double, bool, bool);
-	virtual double distance(double, double, double, double);
-	virtual double distance(Circle, Circle);
-	virtual double theta(double, double, double, double);
-	virtual double theta(Circle, Circle);
-	virtual double dtheta(double, double);
-	virtual Circle forecast(Circle, double, double, double);
-	virtual bool block(Circle, Circle, double);
-	virtual Circle adjustdest(Circle);
-	virtual bool collision();
+	//让我的机甲按最短路径向目标点移动，并避开障碍物
+	void moveToPoint(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID, Point aimPoint);
+	double dist2Point(int x1, int y1, int x2, int y2); // 计算两点之间的距离
+
+
+
+
+
 };

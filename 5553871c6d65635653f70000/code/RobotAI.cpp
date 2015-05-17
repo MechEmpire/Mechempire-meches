@@ -39,7 +39,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	double deviation = ((y1 - y0) / (x1 - x0));
 	distance = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0));
 	double hittime = distance / 13;
-	bool isdj = false, isws = false;
+	bool isdj = false, isws = false,firstrate_shoot = false;
 	//判断是否是ws
 	if (info.robotInformation[1 - myID].weaponTypeName == WT_Prism || info.robotInformation[1-myID].weaponTypeName == WT_MissileLauncher || info.robotInformation[1-myID].weaponTypeName == WT_Tesla)
 		isws = true;
@@ -51,10 +51,30 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	else
 		isdj = false;
 
+	//判断第一帧是否射击；
+	double dis_first0 = sqrt((x0 - 50)*(x0 - 50) + (y0 - 50)*(y0 - 50));
+	double dis_first1 = sqrt((x0 - 1316)*(x0 - 1316) + (y0 - 630)*(y0 - 630));
+	if (dis_first0 < 2 || dis_first1 < 2)
+		firstrate_shoot = false;
+	else firstrate_shoot = true;
 	Beam  be1 = { x0, y0, info.robotInformation[myID].weaponRotation, x1, y1 };
 	Circle c1 = { 300, 250, 75 }, c2 = { 1066, 430, 75 };
 	//射击方式改进
-
+	double x1n = info.robotInformation[1 - myID].vx * hittime + x1;
+	double y1n = info.robotInformation[1 - myID].vy * hittime + y1;
+	double x1ng, y1ng;
+	if (x1n > 1366)
+		x1ng = x1;
+	else x1ng = x1n;
+	if (x1n < 0)
+		x1ng = x1;
+	else x1ng = x1n;
+	if (y1n > 680)
+		y1ng = y1;
+	else y1ng = y1n;
+	if (y1n < 0)
+		y1ng = y1;
+	else y1ng = y1;
 	bool p, p1, p2;
 	p = false;
 	p1 = HitTestBeamCircle(be1, c1);
@@ -66,10 +86,8 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	{
 		if (isws == false)
 		{
-			double x1n = info.robotInformation[1 - myID].vx * hittime + x1;
-			double y1n = info.robotInformation[1 - myID].vy * hittime + y1;
-			double dx = x1 - x0;
-			double dy = y1 - y0;
+			double dx = x1ng - x0;
+			double dy = y1ng - y0;
 			double theta = atan2(dy, dx)*180.0 / PI;
 
 			double dt = theta - info.robotInformation[myID].weaponRotation;
@@ -84,15 +102,13 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				order.wturn = 0;
 
 			}
-			if (p != 1)
+			if (p != 1 && firstrate_shoot == true)
 				order.fire = 1;
 		}
-		else if (isws == true && distance < 500)
-		{
-			double x1n = info.robotInformation[1 - myID].vx * hittime + x1;
-			double y1n = info.robotInformation[1 - myID].vy * hittime + y1;
-			double dx = x1 - x0;
-			double dy = y1 - y0;
+		else if (isws == true && distance < 800)
+		{		
+			double dx = x1ng - x0;
+			double dy = y1ng - y0;
 			double theta = atan2(dy, dx)*180.0 / PI;
 			double dt = theta - info.robotInformation[myID].weaponRotation;
 			AngleAdjust(dt);
@@ -104,21 +120,16 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.wturn = 0;
-
 			}
-
-			if (p != 1)
+			if (p != 1 && firstrate_shoot == true)
 				order.fire = 1;
 		}
-
 	}
 	else {
-		if (distance > 500 && isws == false)
+		if (distance > 800 && isws == false)
 		{
-			double x1n = info.robotInformation[1 - myID].vx * hittime + x1;
-			double y1n = info.robotInformation[1 - myID].vy * hittime + y1;
-			double dx = x1n - x0;
-			double dy = y1n - y0;
+			double dx = x1ng - x0;
+			double dy = y1ng - y0;
 			double theta = atan2(dy, dx)*180.0 / PI;
 			double dt = theta - info.robotInformation[myID].weaponRotation;
 			AngleAdjust(dt);
@@ -130,18 +141,15 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.wturn = 0;
-
 			}
-
-			if (p != 1)
+			if (p != 1 && firstrate_shoot == true)
 				order.fire = 1;
 		}
-		else if (distance < 500 && isws == false)
+		else if (distance < 800 && isws == false)
 		{
-			double dx = x1 - x0;
-			double dy = y1 - y0;
+			double dx = x1ng - x0;
+			double dy = y1ng - y0;
 			double theta = atan2(dy, dx)*180.0 / PI;
-
 			double dt = theta - info.robotInformation[myID].weaponRotation;
 			AngleAdjust(dt);
 			if (dt > eps){
@@ -152,17 +160,15 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.wturn = 0;
-
 			}
-			if (p != 1)
+			if (p != 1 && firstrate_shoot == true)
 				order.fire = 1;
 		}
 		else if (isws == true && distance < 500)
 		{
-			double dx = x1 - x0;
-			double dy = y1 - y0;
+			double dx = x1ng - x0;
+			double dy = y1ng - y0;
 			double theta = atan2(dy, dx)*180.0 / PI;
-
 			double dt = theta - info.robotInformation[myID].weaponRotation;
 			AngleAdjust(dt);
 			if (dt > eps){
@@ -173,12 +179,10 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.wturn = 0;
-
 			}
-			if (p != 1)
+			if (p != 1 && firstrate_shoot == true)
 				order.fire = 1;
 		}
-
 	}
 	// 判断敌方机甲在那个弹药库附近
 	double dis_enemyammo1, dis_enemyammo2, dis_meammo1, dis_meammo2;
@@ -203,11 +207,8 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	{
 		if (distance < 800)
 		{
-
 			double dt = info.robotInformation[1 - myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -216,7 +217,6 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
 		}
 		if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y > 400)
@@ -225,8 +225,6 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 
 			double dt = -90 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -235,17 +233,13 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
-
 		}
 		else if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y < 100)
 			//&& info.robotInformation[myID].engineRotation != 0.0)
 		{
 			double dt = 0 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -254,17 +248,13 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
-
 		}
 		else if (info.robotInformation[myID].circle.x >1300 && info.robotInformation[myID].circle.y < 100)
 			//&& info.robotInformation[myID].engineRotation != 90)
 		{
 			double dt = 90 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -273,9 +263,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
-
 		}
 		else if (info.robotInformation[myID].circle.x > 1200 && info.robotInformation[myID].circle.y > 500)
 			//&& info.robotInformation[myID].engineRotation != 180)
@@ -366,17 +354,14 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 
 			}
 		}
-
-		
-	}else
+	}
+	else
 	{
 		double dx1 = 500 - x0;
 		double dy1 = 500 - y0;
 		double theta1 = atan2(dy1, dx1)*180.0 / PI;
 		double dt1 = theta1 - info.robotInformation[myID].engineRotation;
 		AngleAdjust(dt1);
-
-
 		if (dt1 > eps){
 			order.eturn = 1;
 		}
@@ -387,16 +372,12 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			order.eturn = 0;
 
 		}
-
 		//以前的行走方式 绕圈
 		if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y > 400)
 			//&& info.robotInformation[myID].engineRotation != -90)
 		{
-
 			double dt = -90 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -405,17 +386,13 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
-
 		}
 		else if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y < 100)
 			//&& info.robotInformation[myID].engineRotation != 0.0)
 		{
 			double dt = 0 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -424,17 +401,13 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
-
 		}
 		else if (info.robotInformation[myID].circle.x >1300 && info.robotInformation[myID].circle.y < 100)
 			//&& info.robotInformation[myID].engineRotation != 90)
 		{
 			double dt = 90 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -443,17 +416,13 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
-
 		}
 		else if (info.robotInformation[myID].circle.x > 1200 && info.robotInformation[myID].circle.y > 500)
 			//&& info.robotInformation[myID].engineRotation != 180)
 		{
 			double dt = 180 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt);
-
-
 			if (dt > eps){
 				order.eturn = 1;
 			}
@@ -462,9 +431,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
-
 		}
 		else
 		{
@@ -489,7 +456,6 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				}
 				else {
 					order.eturn = 0;
-
 				}
 			}
 			else if (dis_xu < dis_xb)
@@ -504,55 +470,54 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				}
 				else {
 					order.eturn = 0;
-
 				}
 			}
 		}
-		/*double vx_bullet_near, vy_bullet_near, dis_bullet_near= 9999, dis_bullet,db;
+		//工程浩大的躲子弹233333
+		double vx_bullet_near, vy_bullet_near, dis_bullet_near = 9999, dis_bullet_0, db, x_b, y_b, dis_bullet_1;
+		bool bullet_me = false;
 		int i_b;
 		for (i_b = 0; i_b < info.num_bullet; i_b++)
 		{
 			if (info.bulletInformation[i_b].launcherID == 1 - myID)
 			{
-				dis_bullet = sqrt((info.bulletInformation[i_b].circle.x - x0) * (info.bulletInformation[i_b].circle.x - x0) + (info.bulletInformation[i_b].circle.y - y0)*(info.bulletInformation[i_b].circle.y - y0));
+				dis_bullet_0 = sqrt((x_b - x0) * (x_b - x0) + (y_b - y0)*(y_b - y0));
 			}
-			if (dis_bullet < dis_bullet_near)
+			if (dis_bullet_0 < dis_bullet_near)
 			{
-				dis_bullet_near = dis_bullet;
+				dis_bullet_near = dis_bullet_0;
 				vx_bullet_near = info.bulletInformation[i_b].vx;
 				vy_bullet_near = info.bulletInformation[i_b].vy;
+				x_b = info.bulletInformation[i_b].circle.x;
+				y_b = info.bulletInformation[i_b].circle.y;
 				db = atan2(vy_bullet_near, vx_bullet_near);
+				AngleAdjust(db);
 			}
 		}
-		if ()*/
+		Beam bullet_b = { x_b, y_b, db, x_b + vx_bullet_near, y_b + vy_bullet_near };
+		Circle me = { x0, y0, 55 };
+		bullet_me = HitTestBeamCircle(bullet_b, me);
+		if (bullet_me == true)
+		{
+			double theta;
+			if (db > info.robotInformation[myID].engineRotation)
+				theta = db + 90;
+			else theta = db - 90;
+			double dt = theta - info.robotInformation[myID].engineRotation;
+			AngleAdjust(dt);
+			if (dt > eps){
+				order.eturn = 1;
+			}
+			else if (dt < -eps){
+				order.eturn = -1;
+			}
+			else {
+				order.eturn = 0;
 
-
-
-	}
-
-	//碰边检测调整
-	/*
-	if (dis_xu < R && info.robotInformation[myID].engineRotation < )
-	{
-	double ro;
-	if (info.robotInformation[myID].engineRotation )
-	double dt = 180 - info.robotInformation[myID].engineRotation;
-	AngleAdjust(dt1);
-
-
-	if (dt > eps){
-	order.eturn = 1;
-	}
-	else if (dt < -eps){
-	order.eturn = -1;
-	}
-	else {
-	order.eturn = 0;
+			}
+		}
 
 	}
-
-	}*/
-
 	//info.arsenal[q].respawning_time;
 	//捡弹药库
 	if (info.robotInformation[myID].remainingAmmo == 0)
@@ -562,10 +527,8 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			double dx11 = 50 - x0;
 			double dy11 = 630 - y0;
 			double theta11 = atan2(dy11, dx11)*180.0 / PI;
-
 			double dt11 = theta11 - info.robotInformation[myID].engineRotation;
 			AngleAdjust(dt11);
-
 			if (dt11 > eps){
 				order.eturn = 1;
 			}
@@ -574,7 +537,6 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			else {
 				order.eturn = 0;
-
 			}
 		}
 		else if (b1 == 1 && info.arsenal[1].respawning_time == 0)
@@ -662,7 +624,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
 	weapon = WT_Cannon;	//啊，我爱加农炮
-	engine = ET_GhostTank;	//啊，我爱小蜘蛛
+	engine = ET_AFV;	//啊，我爱小蜘蛛
 }
 
 
@@ -683,13 +645,13 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "nooooooooo";
+	return "nooooooo";
 }
 
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "yyyyyynnnnn";
+	return "YYNnnnnnn";
 }
 
 
@@ -700,17 +662,17 @@ string RobotAI::GetAuthor()
 int RobotAI::GetWeaponRed()
 {
 	//返回一个-255-255之间的整数,代表武器红色的偏移值
-	return 1;
+	return 254;
 }
 int RobotAI::GetWeaponGreen()
 {
 	//返回一个-255-255之间的整数,代表武器绿色的偏移值
-	return 255;
+	return 254;
 }
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return -40;
+	return 240;
 }
 
 
@@ -720,17 +682,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return -34;
+	return 234;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return 99;
+	return 229;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return 107;
+	return 217;
 }
 
 

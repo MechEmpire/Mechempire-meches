@@ -1,6 +1,4 @@
 ﻿#include "RobotAI.h"
-  static int x=0;
-  static int countt=0;
 RobotAI::RobotAI()
 {
 
@@ -17,6 +15,27 @@ double distance(double x1, double y1, double x2, double y2) //计算与敌人的
 {
   return sqrt((x2-x1)*(x2-x1)+(y2- y1)*(y2-y1));
 }
+RobotAI_Order go(double x,double y,const RobotAI_BattlefieldInformation& info,int myID,double jiaodu)//到达XY点的行进函数
+{
+	RobotAI_Order order;
+	auto& me=info.robotInformation[myID];
+	double myeng=me.engineRotation;
+	double gogo=jiaodu-myeng;
+	AngleAdjust(gogo);
+	order.run=1;
+	if(gogo>2.00)
+	{
+		order.eturn=1;
+	}
+	else if(gogo<-2.00)
+	{
+		order.eturn=-1;
+	}
+	else order.eturn=0;
+	order.run=1;
+	return order;
+
+}
 
 //-----------------------------------------------------
 //1.必须完成的战斗核心
@@ -32,118 +51,145 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
- auto& me = info.robotInformation[myID];
-  auto& target = info.robotInformation[1 - myID];
+  auto& me = info.robotInformation[myID];
+  auto& target = info.robotInformation[1-myID];
+  auto& arsenal0 =info.arsenal[0].circle;
+  auto& arsenal1 =info.arsenal[1].circle; 
+  auto&	obstacle0=info.obstacle[0];//障碍物0
+  auto& obstacle1=info.obstacle[1];//障碍物1
   static double mcx = me.circle.x;
   static double mcy = me.circle.y;
   static double tcx = target.circle.x;
   static double tcy = target.circle.y;
-  double dis0 = distance(me.circle.x, me.circle.y, 300, 250);
-  double dis1 = distance(me.circle.x, me.circle.y, 1066, 430);
-  double jdu1= atan2( - me.circle.y, tcx- me.circle.x)*180.0 / PI;
-  
-   if(distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<210)
+  double dis0 = distance(me.circle.x, me.circle.y,arsenal0.x,arsenal0.y);//我与军火库0的距离
+  double dis1 = distance(me.circle.x, me.circle.y,arsenal1.x,arsenal1.y);//我与军火库1的距离
+  double distance0=distance(me.circle.x,me.circle.y,obstacle0.x,obstacle0.y);//我与障碍物0的距离
+  double distance1=distance(me.circle.x,me.circle.y,obstacle1.x,obstacle1.y);//我与障碍物1的距离
+  mcx = me.circle.x;//我的X坐标
+  mcy = me.circle.y;//我的Y坐标
+  tcx = target.circle.x;//敌人的X坐标
+  tcy = target.circle.y;//敌人的Y坐标
+  double emdistance = distance(me.circle.x, me.circle.y, target.circle.x, target.circle.y);//我与敌人的距离
+  double jdu= atan2(tcy-me.circle.y,tcx- me.circle.x)*180.0/PI;//与敌方的角度
+  double jud0=atan2(obstacle0.y-me.circle.y,obstacle0.x-me.circle.x)*180.0/PI;//与障碍物0中心的角度
+  double jud1=atan2(obstacle1.y-me.circle.y,obstacle1.x-me.circle.x)*180.0/PI;//与障碍物1中心的角度
+  double jiaodu0=atan2(arsenal0.y-me.circle.y,arsenal0.x-me.circle.x)*180.0/PI;//与军火库0中心的角度
+  double jiaodu1=atan2(arsenal1.y-me.circle.y,arsenal1.x-me.circle.x)*180.0/PI;//与军火库1中心的角度
+  double jj0=atan2(0-me.circle.y,0-me.circle.x)*180/PI;//我与上面出生点的角度
+  double jj1=atan2(630-me.circle.y,1316-me.circle.x)*180/PI;//我与下面出生点的角度
+  double Lanucher=info.bulletInformation[1-myID].launcherID; 
+  double yqin=me.engineRotation;//引擎角度 单位为度
+  double going=jdu-yqin;   //引擎角度判别
+  static int count=rand();
+  static int flag=0;
+  static int time0=rand();
+  static int time1=rand();
+  static int MT=rand();
+  if(flag==0)//判断出生点
   {
-    order.fire = 1;
-	order.fire = 1;
-	order.fire = 1;
-	order.fire = 1;
+	 if(distance0<distance1)//出生点在上方;
+	  count=0;
+	 else      //出生点在下方
+	  count=1;
+	 flag=1;    //出生点判断完毕
   }
-
- if(x==0)
- {
-  if(dis0<dis1)//冲向上边的障碍物
+  if(count==0)
+  {
+	order=go(arsenal0.x,arsenal0.y,info,myID,jiaodu0);//出生点在上方去军火库0
+	if(me.circle.x==50&&me.circle.y==630)//用于判断是否去过军火库0
+		 time0=0;
+  }
+  else if(count==1)//出生点在下方去军火库1
+  {
+	  order=go(arsenal1.x,arsenal1.y,info,myID,jiaodu1);
+	  if(me.circle.x==1316&&me.circle.y==50)//用于判断是否去过军火库1
+		 time1=1;
+  }  
+  if(time1==1)
+  {
+    order = go(info.arsenal[0].circle.x, info.arsenal[0].circle.y, info, myID,jiaodu0);//去过军火库1后前往军火库0
+	if(me.circle.x==50&&me.circle.y==630)
+			MT=0;
+  }
+  if(time0==0)
+  {
+    order = go(info.arsenal[1].circle.x, info.arsenal[1].circle.y, info, myID,jiaodu1);//去过军火库0后前往军火库1
+	if(me.circle.x==1316&&me.circle.y==50)
+			MT=1;
+  }
+  if(MT==0)//围绕军火库0旋转
   {
 	  order.run=1;
-	  countt++;
-	  jdu1=atan2(175-me.circle.y, 50-me.circle.x)*180.0 / PI;
-	 order.run=1;
-  double going1=jdu1-me.engineRotation;   //引擎角度判别
-	 order.run=1;
-  AngleAdjust(going1);
-	  if(going1>2.00){
-		  order.run=1;
-		  order.eturn=1;
+	  order=go(obstacle0.x,obstacle0.y,info,myID,jud0);
+	  if(distance0<130&&info.robotInformation[1-myID].remainingAmmo>2)
+	  {
+		  double T=jud0-yqin+90;
+		  if(T>2.00)
+		  {
+			  order.run=1;
+			  order.eturn=1;
+		  }
+		  else if(T<-2.00)
+		  {
+			  order.run=1;
+			  order.eturn=-1;
+		  }
 	  }
-	  else if(going1<-2.00){
-
-		  order.run=1;
-		  order.eturn=-1;
-	  }
-	  if(-20<me.circle.y-170&&me.circle.y-170<20)
-		  x++;
   }
-  if(countt==0) //冲向下边的障碍物
+  if(MT==1)//围绕军火库1旋转
   {
-	double jdu2=atan2(430-me.circle.y, 1316- me.circle.x)*180.0 / PI;
-	order.run=1;
-	double going2=jdu2-me.engineRotation;   //引擎角度判别
-	 order.run=1;
-  AngleAdjust(going2);
-	  if(going2>2.00){
-		  order.run=1;
-		  order.eturn=1;
+	  order.run=1;
+	  order=go(obstacle1.x,obstacle1.y,info,myID,jud1);
+	  if(distance1<130&&info.robotInformation[1-myID].remainingAmmo>2)
+	  {
+		    if(distance1<130&&info.robotInformation[1-myID].remainingAmmo>2)
+		{
+				  double F=jud1-yqin+90;
+				  if(F>2.00)
+				 {
+				  order.run=1;
+				  order.eturn=1;
+				  }
+				  else if(F<-2.00)
+				  {
+					  order.run=1;
+					  order.eturn=-1;
+				  }
+		}
+			 
 	  }
-	  else if(going2<-2.00){
-
-		  order.run=1;
-		  order.eturn=-1;
-	  }
-	  if(-20<me.circle.y-430&&me.circle.y-430<20)
-		  x++;
   }
- }
+ //开火
+	  if(emdistance<180)
+	  order.fire=1;
 
-  if(distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<210)
-  {
-    order.fire = 1;
-	order.fire = 1;
-	order.fire = 1;
-	order.fire = 1;
-	order.fire = 1;
-  }
-
-  order.run=1;
-  mcx = me.circle.x;
-  mcy = me.circle.y;
-  tcx = target.circle.x;
-  tcy = target.circle.y;
-  double emdistance = distance(me.circle.x, me.circle.y, target.circle.x, target.circle.y);
-  double jdu= atan2(tcy - me.circle.y, tcx- me.circle.x)*180.0 / PI;
-
-  //distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<300)//狂追猛操
-  if(x!=0)
-  {
-	 order.run=1;
-  double yqin=me.engineRotation;//引擎角度 单位为度
-	 order.run=1;
-  double going=jdu-yqin;   //引擎角度判别
-	 order.run=1;
+  //武器瞄准
+	 double mw=me.weaponRotation;//武器角度 单位为度 
+	 double wq=jdu-mw;//武器角度判别
+	 AngleAdjust(wq);
+	 if(wq>2.00){
+	  order.wturn = 1;
+	 }
+	 else if (wq<-2.00) 
+	 {
+	   order.wturn = -1;
+	 } 
+  //冲向敌人
+  
+ 
   AngleAdjust(going);
+  if(emdistance<400&&info.robotInformation[1-myID].remainingAmmo<=2)
+  {
 	  if(going>2.00){
 		  order.run=1;
 		  order.eturn=1;
 	  }
 	  else if(going<-2.00){
-
 		  order.run=1;
-		  order.eturn=-1;
+		  order.eturn=-1; 
 	  }
   }
-  double wp=me.weaponRotation;//武器角度 单位为度
-  double wq=jdu-wp;//武器角度判别
-  AngleAdjust(wq);
-  if(wq>3.00){
-    order.wturn = 1;
-  }
-  else if (wq<-3.00) {
-    order.wturn = -1;
-  } 
-  if(distance(me.circle.x,me.circle.y,target.circle.x,target.circle.y)<200)
-  {
-    order.fire = 1;
-  }
- 
+  
   }
 
 
@@ -159,8 +205,8 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_ElectricSaw   ;	//啊，我爱大电锯
-	engine = ET_Shuttle  ;	//啊，我爱幽灵坦克
+	weapon =WT_ElectricSaw  ;	//啊，我爱大电锯
+	engine = ET_GhostTank ;	//啊，我爱幽灵坦克
 }
 
 
@@ -181,7 +227,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "无耻小螃蟹";
+	return "寒冰诱惑";
 }
 
 string RobotAI::GetAuthor()
@@ -203,12 +249,12 @@ int RobotAI::GetWeaponRed()
 int RobotAI::GetWeaponGreen()
 {
 	//返回一个-255-255之间的整数,代表武器绿色的偏移值
-	return 10;
+	return -18;
 }
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return -128;
+	return 255;
 }
 
 
@@ -218,17 +264,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return 20;
+	return -255;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return -255;
+	return -18;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return -158;
+	return 255;
 }
 
 
@@ -246,7 +292,6 @@ int RobotAI::GetEngineBlue()
 
 void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 {
-	
 	//一场战斗开始时被调用，可能可以用来初始化
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
