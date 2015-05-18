@@ -141,6 +141,7 @@ public:
 	double dis(double  x1,double x2,double y1,double y2);
 	double sinangle(Circle &self,const Circle& other);
 	void  TurnToPoint(const Circle &self,const Circle &other,double angleofTE,double angle,RobotAI_Order& order);
+	void  RunOffPoint(const Circle &self,const Circle &other,double angleofTwoEngine,double angle,RobotAI_Order& order);
 	double disLinePoint(double& k,double &b,const Circle& heart);
 	bool isTwoSide(Point &left,Point &right,const Circle &middle);
 };

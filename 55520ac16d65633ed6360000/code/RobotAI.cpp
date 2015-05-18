@@ -79,13 +79,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
   double jj1=atan2(630-me.circle.y,1316-me.circle.x)*180/PI;//我与下面出生点的角度
   double Lanucher=info.bulletInformation[1-myID].launcherID; 
   double yqin=me.engineRotation;//引擎角度 单位为度
-  double going=jdu-yqin;   //引擎角度判别
+ 
   static int count=rand();
   static int flag=0;
   static int time0=rand();
   static int time1=rand();
   static int MT=rand();
-  if(flag==0)//判断出生点
+  /*if(flag==0)//判断出生点
   {
 	 if(distance0<distance1)//出生点在上方;
 	  count=0;
@@ -104,24 +104,14 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	  order=go(arsenal1.x,arsenal1.y,info,myID,jiaodu1);
 	  if(me.circle.x==1316&&me.circle.y==50)//用于判断是否去过军火库1
 		 time1=1;
-  }  
-  if(time1==1)
-  {
-    order = go(info.arsenal[0].circle.x, info.arsenal[0].circle.y, info, myID,jiaodu0);//去过军火库1后前往军火库0
-	if(me.circle.x==50&&me.circle.y==630)
-			MT=0;
-  }
-  if(time0==0)
-  {
-    order = go(info.arsenal[1].circle.x, info.arsenal[1].circle.y, info, myID,jiaodu1);//去过军火库0后前往军火库1
-	if(me.circle.x==1316&&me.circle.y==50)
-			MT=1;
-  }
+  }    
+if(time1==1)	MT=1;		
+if(time0==0)	MT=0;			
   if(MT==0)//围绕军火库0旋转
   {
 	  order.run=1;
 	  order=go(obstacle0.x,obstacle0.y,info,myID,jud0);
-	  if(distance0<130&&info.robotInformation[1-myID].remainingAmmo>2)
+	  if(distance0<125&&info.robotInformation[1-myID].remainingAmmo>2)
 	  {
 		  double T=jud0-yqin+90;
 		  if(T>2.00)
@@ -140,10 +130,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
   {
 	  order.run=1;
 	  order=go(obstacle1.x,obstacle1.y,info,myID,jud1);
-	  if(distance1<130&&info.robotInformation[1-myID].remainingAmmo>2)
+	  if(distance1<125&&info.robotInformation[1-myID].remainingAmmo>2)
 	  {
-		    if(distance1<130&&info.robotInformation[1-myID].remainingAmmo>2)
-		{
 				  double F=jud1-yqin+90;
 				  if(F>2.00)
 				 {
@@ -154,14 +142,12 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 				  {
 					  order.run=1;
 					  order.eturn=-1;
-				  }
-		}
-			 
+				  }	 
 	  }
   }
- //开火
-	  if(emdistance<180)
-	  order.fire=1;
+ //开火*/
+if(emdistance<200)
+	order.fire=1;
 
   //武器瞄准
 	 double mw=me.weaponRotation;//武器角度 单位为度 
@@ -175,11 +161,9 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	   order.wturn = -1;
 	 } 
   //冲向敌人
-  
- 
+   double going=jdu-yqin;   //引擎角度判别
+   order.run=1;
   AngleAdjust(going);
-  if(emdistance<400&&info.robotInformation[1-myID].remainingAmmo<=2)
-  {
 	  if(going>2.00){
 		  order.run=1;
 		  order.eturn=1;
@@ -188,8 +172,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		  order.run=1;
 		  order.eturn=-1; 
 	  }
-  }
-  
+ 
   }
 
 
@@ -205,7 +188,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon =WT_ElectricSaw  ;	//啊，我爱大电锯
+	weapon =WT_ElectricSaw   ;	//啊，我爱大电锯
 	engine = ET_GhostTank ;	//啊，我爱幽灵坦克
 }
 

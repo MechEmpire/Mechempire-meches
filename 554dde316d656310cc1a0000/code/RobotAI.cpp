@@ -121,7 +121,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	}
 
 	//射击
-	if (distance > 300 && isws == false)
+	if (distance > 300 && isws == false && distance < 800)
 	{
 		shoot(order, x1ng, y1ng, info, myID);
 		if (p != 1 && firstrate_shoot == true)
@@ -147,28 +147,13 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		{
 			if (distance > 500)
 			{
-
-				walkpoint(order, 600, 300, info, myID);
-
+				walkpoint(order, x1, y1, info, myID);
 			}
 			else if (distance < 500)
 			{
-				if (y0 > 340)
-				{
-					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
-					double rr = theta - 90;
-					walkrotation(order, rr, info, myID);
-				}
-				else if (y0 < 340)
-				{
-					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
-					double rr = theta + 90;
-					walkrotation(order, rr, info, myID);
-				}
+				walkrotation(order, info.robotInformation[1 - myID].engineRotation, info, myID);
 			}
 			raojiaoluo(order, info, myID);
-			
-
 		}
 		else if (isws == true)//测试效果很好
 		{
@@ -186,21 +171,18 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				}
 				else if (dis_me_za1 < 200)
 				{
-
 					double dt = theta1 + 35;
 					walkrotation(order, dt, info, myID);
 				}
 				else
 				if (dis_me_za0 > 75 || dis_me_za1 > 75)
 				{
-
 					double dt = theta1;
 					walkrotation(order, dt, info, myID);
 				}
 			}
 			else
 			{
-
 				double dt = theta1;
 				walkrotation(order, dt, info, myID);
 			}
@@ -209,11 +191,12 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		}
 		else if (isjq == true)
 		{
-			if (distance > 700)
+			raojiaoluo(order, info, myID);
+			if (distance > 500)
 			{
 				walkpoint(order, 600, 300, info, myID);
 			}
-			else if (distance < 700)
+			else if (distance < 500)
 			{
 				if (y0 > 340)
 				{
@@ -228,23 +211,21 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 					walkrotation(order, rr, info, myID);
 				}
 			}
-			raojiaoluo(order, info, myID);
 	//		duozidan(order, info, myID);
 			double dis_me_za0 = sqrt((300 - x0)*(300 - x0) + (250 - y0)*(250 - y0));
 			double dis_me_za1 = sqrt((1066 - x0)*(1066 - x0) + (430 - y0)*(430 - y0));
 			if (dis_me_za0 < 200)
 			{
 				double theta1 = atan2(250 - y0, 300 - x0)*180.0 / PI;
-				double dt = theta1 + 35;
+				double dt = theta1 + 90;
 				walkrotation(order, dt, info, myID);
 			}
 			else if (dis_me_za1 < 200)
 			{
 				double theta1 = atan2(1066 - y0, 430 - x0)*180.0 / PI;
-				double dt = theta1 + 35;
+				double dt = theta1 + 90;
 				walkrotation(order, dt, info, myID);
 			}
-
 		}
 		else
 		{
@@ -271,7 +252,6 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			}
 			//工程浩大的躲子弹233333
 			duozidan(order, info, myID);
-
 		}
 	}
 	if (info.robotInformation[myID].remainingAmmo <= 2)
@@ -296,7 +276,6 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 			else if (info.arsenal[0].respawning_time == 0)
 			{
 				walkpoint(order, 50, 630, info, myID);
-
 			}
 		}
 	//	duozidan(order, info, myID);
@@ -502,7 +481,7 @@ void walkpoint(RobotAI_Order& order, double x1, double y1, const RobotAI_Battlef
 }
 void duozidan(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
-	double vx_bullet_near, vy_bullet_near, dis_bullet_near = 9999, dis_bullet_0, db, x_b, y_b, dis_bullet_1;
+	double vx_bullet_near, vy_bullet_near, dis_bullet_near = 9999, dis_bullet_0, db, x_b, y_b;
 	double x0 = info.robotInformation[myID].circle.x;
 	double y0 = info.robotInformation[myID].circle.y;
 	bool bullet_me = false;

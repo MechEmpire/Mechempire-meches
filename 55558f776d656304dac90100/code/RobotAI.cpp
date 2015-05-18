@@ -157,7 +157,11 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 
 
+    
+	
 
+
+	
 	
 	//开火判定
 
@@ -177,114 +181,36 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	if (info.robotInformation[myID].remainingAmmo>0)//有弹药
 	{	
 
-	if(info.robotInformation[myID].remainingAmmo>10)
-	{
 		
-				//run
-
-	if(selfE.x<barrierLU.x)
-	{
-		if ((angleE<92&&angleE>88)&&(selfE.y<barrierLU.y))
+		if (distance>1200)
 		{
-			order.eturn=0;
-			order.run=1;
-		}
-		else{
-		order.run=0;
-		if (angleE<90)
-		{
-			order.eturn=1;
-
-
-		}
-		if (angleE>90)
-		{
-				order.eturn=-1;
-		}
-		}
-
-	}
-	if (selfE.x>barrierRD.x)
-	{
-		if ((angleE>-92&&angleE<-88)&&(selfE.y>barrierRD.y))
-		{
-			order.eturn=0;
-			order.run=1;
+			TurnToPoint(selfE,armyE,angleofTwoEngine,angleE,order);
+			
 		}
 		else
 		{
-			order.run=0;
-		if (angleE<-90)
-		{
-			order.eturn=1;
-
-
-		}
-		if (angleE>-90)
-		{
-				order.eturn=1;
-
-		}
-		}
-		
-	}
-	
-		}
-
-	else
-	{
-		if(selfE.x<barrierLU.x)
-	{
-		if ((angleE<92&&angleE>88))
-		{
-			order.eturn=0;
-			order.run=1;
-		}
-		else{
-		order.run=0;
-		if (angleE<90)
-		{
-			order.eturn=1;
-
-
-		}
-		if (angleE>90)
-		{
-				order.eturn=-1;
-		}
-		}
-
-	}
-	if (selfE.x>barrierRD.x)
-	{
-		if ((angleE>-92&&angleE<-88))
-		{
-			order.eturn=0;
-			order.run=1;
-		}
-		else
-		{
-			order.run=0;
-		if (angleE<-90)
-		{
-			order.eturn=1;
-
-
-		}
-		if (angleE>-90)
-		{
-				order.eturn=1;
-
-		}
+			if (distance<600)
+			{
+				if(selfE.x<700&&selfE.y<340)
+				
+				TurnToPoint(selfE,barrierRD,angleBetweenMeRD,angleE,order);
+				
+				if (selfE.x>700&&selfE.y>340)
+				TurnToPoint(selfE,barrierLU,angleBetweenMeLU,angleE,order);
+				
+				if (selfE.x>800&&selfE.y<340)
+				TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
+				if(selfE.x<700&&selfE.y>340)
+				TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
+			}
+			else
+			RunOffPoint(selfE,armyE,angleofTwoEngine,angleE,order);
 		}
 		
-	}
-	}
-		
-	
-	
-	//....................................................................................................................................
-	if (distance<=450+armyE.r&&(fabs(sumangle)<=effectiveshotangle||fabs(chaangle)<=effectiveshotangle))
+
+
+		order.run=1;
+		if ((fabs(sumangle)<=effectiveshotangle||fabs(chaangle)<=effectiveshotangle))
 		{
 			if ((isTwoSide(self_point,army_point,barrierLU)&&lu<=barrierLU.r)||(isTwoSide(self_point,army_point,barrierRD)&&rd<=barrierRD.r))
 			{
@@ -301,12 +227,51 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		}
 
 	}
-	else
+	else//无弹药
 	{
-		
-	
+		double disfire1=dis(info.arsenal[0].circle.x,selfE.x,info.arsenal[0].circle.y,selfE.y);
+		double disfire2=dis(info.arsenal[1].circle.x,selfE.x,info.arsenal[0].circle.y,selfE.y);
+		double angleoffire1=sinangle (selfE,info.arsenal[0].circle);
+		double angleoffire2=sinangle (selfE,info.arsenal[1].circle );
+
+		if(info.arsenal [0].respawning_time<10&&info.arsenal [1].respawning_time<10)//弹药库均冷却
+		{
+			if(disfire1<disfire2)
+				TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
+			else
+				TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
+
+		}
+		else
+		{
+				if(info.arsenal [0].respawning_time<10)//弹药库1冷却
+			TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
+				else if(info.arsenal [1].respawning_time<10)//弹药库2冷却
+			TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
+				else //均未冷却
+				{
+					
+					if (distance<600)
+					{
+
+					if(selfE.x<700&&selfE.y<340)				
+					TurnToPoint(selfE,barrierRD,angleBetweenMeRD,angleE,order);				
+					if (selfE.x>700&&selfE.y>340)
+					TurnToPoint(selfE,barrierLU,angleBetweenMeLU,angleE,order);				
+					if (selfE.x>800&&selfE.y<340)
+					TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
+					if(selfE.x<700&&selfE.y>340)
+					TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
+
+					}
+					else
+					RunOffPoint(selfE,armyE,angleofTwoEngine,angleE,order);
+				}
+		}
+		order.run=1;
 	}
 }
+
 
 
 
@@ -320,15 +285,15 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	//weapon = WT_Tesla;	
+	weapon = WT_Tesla;	
 	//weapon=WT_PlasmaTorch;
 	//weapon=WT_Cannon;
 	//weapon=WT_Prism;
+	//weapon=WT_Cannon;
 	//weapon=WT_Apollo;
 	//weapon=WT_Shotgun;
-	weapon = WT_Machinegun;	
-	//engine = ET_UFO;	
-	engine=ET_Shuttle;
+	engine = ET_UFO;	
+	//engine=ET_Shuttle;
 }
 
 
@@ -349,7 +314,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "疯狂的试验品 l";
+	return "cc!";
 }
 
 string RobotAI::GetAuthor()
@@ -527,13 +492,13 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 		
 			if (sumangle<=180&&sumangle>=0)
 			{
-				order.wturn=-1;
+				order.eturn=-1;
 //				cout<<"逆时针转"<<endl;
 				
 			}	
 			if (sumangle>=180&&sumangle<=360)
 			{
-				order.wturn=1;
+				order.eturn=1;
 //				cout<<"顺时针转"<<endl;
 			}			
 	}
@@ -544,12 +509,12 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 //		cout<<"   我方在下  武器朝上 ";
 			if (sumangle>=0)
 			{
-			order.wturn=-1;
+			order.eturn=-1;
 //			cout<<"逆时针转"<<endl;
 			}
 			if (sumangle<=-1)
 			{
-				order.wturn=1;
+				order.eturn=1;
 //				cout<<"顺时针转"<<endl;
 			}
 			
@@ -562,12 +527,12 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 //		cout<<"   我方在上  武器朝下 ";
 			if (chaangle>=0)
 		{
-			order.wturn=1;
+			order.eturn=1;
 //			cout<<"顺时针转"<<endl;
 		}
 		if (chaangle<=-1)
 		{
-			order.wturn=-1;
+			order.eturn=-1;
 //			cout<<"逆时针转"<<endl;
 		}
 
@@ -582,12 +547,12 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 
 			if (chaangle<180&&chaangle>=0)
 		{
-			order.wturn=1;
+			order.eturn=1;
 //			cout<<"顺时针转"<<endl;
 		}
 		if (chaangle>=180&&chaangle<=359)
 		{
-			order.wturn=-1;
+			order.eturn=-1;
 //			cout<<"逆时针转"<<endl;
 		}
 
@@ -614,4 +579,87 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 		}
 		else 
 			return false;
+	}
+
+
+	void  RobotAI::RunOffPoint(const Circle &self,const Circle &other,double angleofTwoEngine,double angle,RobotAI_Order& order)
+	{
+		double sumangle=angleofTwoEngine+angle;
+		double chaangle=angleofTwoEngine-angle;
+		
+	if (self.y>=other.y&&angle>=0)
+	{
+
+//		cout<<"   我方在下  武器朝下";
+		
+			if (sumangle<=180&&sumangle>=0)
+			{
+				order.eturn=1;
+
+				
+			}	
+			if (sumangle>=180&&sumangle<=360)
+			{
+				order.eturn=-1;
+
+			}			
+	}
+	if (self.y>=other.y&&angle<=0)
+	{
+	
+
+//		cout<<"   我方在下  武器朝上 ";
+			if (sumangle>=0)
+			{
+			order.eturn=1;
+//			cout<<"逆时针转"<<endl;
+			}
+			if (sumangle<=-1)
+			{
+				order.eturn=-1;
+//				cout<<"顺时针转"<<endl;
+			}
+			
+	}
+
+
+	if (self.y<=other.y&&angle>=0)
+	{
+
+//		cout<<"   我方在上  武器朝下 ";
+			if (chaangle>=0)
+		{
+			order.eturn=-1;
+//			cout<<"顺时针转"<<endl;
+		}
+		if (chaangle<=-1)
+		{
+			order.eturn=1;
+//			cout<<"逆时针转"<<endl;
+		}
+
+		
+	}
+
+
+	if (self.y<=other.y&&angle<=0)
+	{
+//		cout<<"   我方在上  武器朝上 ";
+
+
+			if (chaangle<180&&chaangle>=0)
+		{
+			order.eturn=-1;
+//			cout<<"顺时针转"<<endl;
+		}
+		if (chaangle>=180&&chaangle<=359)
+		{
+			order.eturn=1;
+//			cout<<"逆时针转"<<endl;
+		}
+
+		
+	}
+
+
 	}

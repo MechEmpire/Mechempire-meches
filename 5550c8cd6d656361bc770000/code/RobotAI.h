@@ -122,10 +122,20 @@ public:
 	virtual double Distance(double x1, double y1, double x2, double y2);
 	//确定旋转角方向
 	virtual double howToRotate(Circle me, Circle armor, double weapon_rotation, double vx, double vy);
-
-
-
-
+	//针对战锤坦克，躲避子弹用
+	virtual int AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
+	//如果有子弹威胁到我
+	virtual bool BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype);
+	//遇到障碍物
+	virtual int avoidObstacleAFV(RobotAI_RobotInformation me, Circle obstacle);
+	virtual Circle whichObstacle(Circle ob1, Circle ob2, Circle me);
+	virtual int StrikeObstacle(Circle me, Circle obstacle[],const int num_obs);
+	//得到与敌人距离500的点
+	virtual Circle get500Point(Circle me, Circle armor, double dist);
+	//遇到墙
+	virtual int avoidWall(RobotAI_RobotInformation me);
+	//战锤坦克躲加农炮和阿波罗电磁炮
+	virtual int AvoidCannonAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
 
 
 };

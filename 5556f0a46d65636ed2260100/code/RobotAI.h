@@ -10,10 +10,14 @@ protected:
 	//TODO:可以在这里添加你自己的成员变量
 	int enemyId; // 敌人ID
 	Circle myObj; // 我方障碍物
+	Circle theOtherObj; // 另一方障碍物
 	double attackAlarm; // 猥琐的阈值，等于敌方的弹药率
 	double attackDistance; // 与敌人间距小于此阈值时，立即攻击
+	double attackForceDist; // 抢弹药时，直接攻击敌人的距离阈值
+	double distDanger; // 躲避子弹的警戒距离
 	Point farArsenal; // 距离我方较远的那个军火库
 	bool hideForEver;
+	bool hideBullet; // 是否对子弹进行躲避
 public:
 
 	//************************************************
@@ -126,6 +130,11 @@ public:
 	//让我的机甲按最短路径向目标点移动，并避开障碍物
 	void moveToPoint(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID, Point aimPoint);
 	double dist2Point(int x1, int y1, int x2, int y2); // 计算两点之间的距离
+	// 封装了moveToPoint，增加了躲避子弹的功能
+	void smartMoveToPoint(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID, Point aimPoint);
+	double getTheta(int toX, int toY, int fromX, int fromY); // 计算两点连线与x轴正向的夹角，单位：度
+
+	bool HitTestCirclePoint(const Circle &,const double &,const double &y);
 
 
 

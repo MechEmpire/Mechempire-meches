@@ -248,7 +248,7 @@ if (info.robotInformation[myID].remainingAmmo>0)//有弹药
 	
 	//开火判定
 
-	if (distance<=105+armyE.r&&(fabs(sumangle)<=20||fabs(chaangle)<=20))
+	if (distance<=115+armyE.r&&(fabs(sumangle)<=20||fabs(chaangle)<=20))
 	{
 		order.fire=1;
 		

@@ -45,9 +45,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		< dist2Point(info.robotInformation[myID].circle.x, info.robotInformation[myID].circle.y, 1066, 430)) {
 		myObj.x = 300;
 		myObj.y = 250;
+		theOtherObj.x = 1066;
+		theOtherObj.y = 430;
 	} else {
 		myObj.x = 1066;
 		myObj.y = 430;
+		theOtherObj.x = 300;
+		theOtherObj.y = 250;
 	}
 
 	// 如果临近位置有军火库，则抢占
@@ -92,10 +96,10 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		//cout << "pointX, pointY = " << arsenalPoint.x << ", " << arsenalPoint.y << endl;
 			// 如果离敌人很近，则直接攻击敌人
 		if (dist2Point(info.robotInformation[myID].circle.x, info.robotInformation[myID].circle.y,
-		info.robotInformation[enemyId].circle.x, info.robotInformation[enemyId].circle.y) < 170)
-			moveToPoint(order, info, myID, enemyPoint);	
+			info.robotInformation[enemyId].circle.x, info.robotInformation[enemyId].circle.y) < attackForceDist)
+			smartMoveToPoint(order, info, myID, enemyPoint);	
 		else
-			moveToPoint(order, info, myID, arsenalPoint);
+			smartMoveToPoint(order, info, myID, arsenalPoint);
 	} else {
 		if ( (double)info.robotInformation[enemyId].remainingAmmo /
 			get_weapon_ammo(info.robotInformation[enemyId].weaponTypeName) > attackAlarm // 敌方弹药不小于设定阈值
@@ -111,7 +115,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		} else {
 			// 追敌人
 			
-			moveToPoint(order, info, myID, enemyPoint);
+			smartMoveToPoint(order, info, myID, enemyPoint);
 		}
 	}
 	/***********************************
@@ -123,20 +127,8 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	// 调整武器朝向
 	double theta; // 我方机甲与敌方机甲中心的连线与x轴正向的夹角（单位：度）
-	double x = info.robotInformation[enemyId].circle.x - info.robotInformation[myID].circle.x;
-	double y = info.robotInformation[enemyId].circle.y - info.robotInformation[myID].circle.y;
-	double sinTheta = y / distToEnemy;
-	//double cosTheta = x / distToEnemy;
-	theta = RadianToAngle( asin(sinTheta) );
-	// 针对边界情况，对theta校准
-	if ( x < 0 ) {
-		if (theta > 0)
-			theta = 180 - theta;
-		else
-			theta = -180 - theta;
-	}
-	//cout << "sinTheta = " << sinTheta;
-	//cout << " Theta = " << RadianToAngle( asin(sinTheta) ) << endl;
+	theta = getTheta(info.robotInformation[enemyId].circle.x, info.robotInformation[enemyId].circle.y,
+		info.robotInformation[myID].circle.x,info.robotInformation[myID].circle.y);
 	// 最佳旋转方向
 	if (theta > 0) {
 		if (0 < theta - info.robotInformation[myID].weaponRotation &&
@@ -290,6 +282,24 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 	hideForEver = false;
 	if (info.robotInformation[enemyId].weaponTypeName == WT_ElectricSaw)
 		hideForEver = true;
+
+	// 设置躲避子弹的警戒距离
+	string fastWeapons[4] = {"WT_Cannon", "WT_Shotgun", "WT_RPG", "WT_Machinegun"};
+	distDanger = 250;
+	for (int i = 0; i < 4; i++) {
+		if (fastWeapons[i] == get_weapon_name( info.robotInformation[enemyId].weaponTypeName ))
+			distDanger = 350;
+	}
+
+	attackForceDist = 170; // 抢弹药时，是否直接攻击敌人。
+	// 设置是否对子弹进行躲避
+	hideBullet = true;
+	if (info.robotInformation[enemyId].weaponTypeName == WT_Machinegun) {
+		hideBullet = false;
+		attackForceDist = 300;
+	}
+
+	
 }
 
 void RobotAI::onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID)
@@ -332,7 +342,7 @@ void RobotAI::hide(RobotAI_Order& order,const RobotAI_BattlefieldInformation& in
 	aimPoint.y = myObj.y - y;
 	//--------------------------------------------
 	// 让我的机甲按最短路径向目标点移动，并避开障碍物
-	moveToPoint(order, info, myID, aimPoint);
+	smartMoveToPoint(order, info, myID, aimPoint);
 }
 
 //让我的机甲按最短路径向目标点移动，并避开障碍物
@@ -403,4 +413,104 @@ void RobotAI::moveToPoint(RobotAI_Order& order,const RobotAI_BattlefieldInformat
 double RobotAI::dist2Point(int x1, int y1, int x2, int y2)
 {
 	return sqrt( (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) );
+}
+// 封装了moveToPoint，增加了躲避子弹的功能
+void RobotAI::smartMoveToPoint(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,
+	int myID, Point aimPoint)
+{
+	moveToPoint(order,info,myID, aimPoint);
+	int myX = info.robotInformation[myID].circle.x;
+	int myY = info.robotInformation[myID].circle.y;
+
+	if (!hideBullet) // 如果设定为不对子弹进行躲避
+		return;
+
+	// 如果我与地方距离极短，则不考虑子弹问题，返回
+	if (dist2Point(info.robotInformation[enemyId].circle.x, info.robotInformation[enemyId].circle.y,
+		myX, myY) < attackDistance)
+		return;
+	
+	//如果敌方是光陵或磁暴，并且剩余冷却时间极短，则把武器本身当做子弹处理
+	if (info.robotInformation[enemyId].weaponTypeName == WT_Prism ||
+		info.robotInformation[enemyId].weaponTypeName == WT_Tesla) {
+		//把武器本身当做子弹处理
+		// TODO
+	}
+
+	// 如果有子弹需要躲避，则更新行动指令
+	if (info.num_bullet == 0) return; // 没有子弹
+	Beam bulletNear; // 可能打中我的最近的一颗子弹
+	Beam bulletTemp;
+	double distShortest = 2500; // 可能打中我的子弹和我的最短距离
+	for (int i = 0; i < info.num_bullet; i++) {
+		// 将子弹信息存储为射线
+		bulletTemp.x = info.bulletInformation[i].circle.x;
+		bulletTemp.y = info.bulletInformation[i].circle.y;
+		bulletTemp.rotation = info.bulletInformation[i].rotation;
+		// 如果不能打中我，则跳过
+		if (!HitTestBeamCircle(bulletTemp, info.robotInformation[myID].circle))
+			continue;
+		// 如果在打中我之前，会打到障碍物，则跳过
+		if (HitTestBeamCircle(bulletTemp, myObj) && dist2Point(bulletTemp.x, bulletTemp.y, myObj.x, myObj.y)
+			< dist2Point(bulletTemp.x, bulletTemp.y, myX, myY))
+			continue;
+		if (HitTestBeamCircle(bulletTemp, theOtherObj) && dist2Point(bulletTemp.x, bulletTemp.y, theOtherObj.x, theOtherObj.y)
+			< dist2Point(bulletTemp.x, bulletTemp.y, myX, myY))
+			continue;
+		// 判断是否离我最近
+		if (dist2Point(bulletTemp.x, bulletTemp.y, myX, myY) < distShortest) {
+			distShortest = dist2Point(bulletTemp.x, bulletTemp.y, myX, myY);
+			bulletNear = bulletTemp;
+		}
+	}
+	// 如果没有对我有威胁的子弹，则返回
+	if (distShortest > distDanger)
+		return;
+	// 此时，肯定存在一个离我最近的（小于警戒距离），可能打到我的子弹。并且它的信息存储在bulletNear中。
+	double theta = getTheta(myX, myY, bulletNear.x, bulletNear.y);
+	double directionAngle; // 单位：度。此角度指明了躲避时应该前进的方向。
+	if (theta > bulletNear.rotation)
+		directionAngle = AnglePlus(bulletNear.rotation, 90);
+	else
+		directionAngle = AnglePlus(bulletNear.rotation, -90);
+	// 向躲避目标点移动
+	Point hidePoint;
+	double mod = 46; // 引擎半径+1
+	hidePoint.x = myX + mod * sin(directionAngle);
+	hidePoint.y = myY + mod * cos(directionAngle);
+	// 如果躲避点在障碍物内，或者在界外（此时移动无效），则不进行躲避，直接返回
+	if ( hidePoint.x < 0 || hidePoint.y < 0 || hidePoint.x > 1365 || hidePoint.y > 679 
+		|| HitTestCirclePoint(myObj, hidePoint.x, hidePoint.y))
+		return;
+	moveToPoint(order,info,myID, hidePoint); // 更新移动指令
+}
+// 计算两点连线与x轴正向的夹角，单位：度
+double RobotAI::getTheta(int toX, int toY, int fromX, int fromY)
+{
+	double theta; // 我方机甲与敌方机甲中心的连线与x轴正向的夹角（单位：度）
+	double x = toX - fromX;
+	double y = toY - fromY;
+	double sinTheta = y / dist2Point(toX, toY, fromX, fromY);
+	theta = RadianToAngle( asin(sinTheta) );
+	// 针对边界情况，对theta校准
+	if ( x < 0 ) {
+		if (theta > 0)
+			theta = 180 - theta;
+		else
+			theta = -180 - theta;
+	}
+	return theta;
+}
+
+bool RobotAI::HitTestCirclePoint(const Circle &c,const double &x,const double &y)
+{
+	double dx=c.x-x,	dy=c.y-y;
+
+	if(abs(dx)>c.r || abs(dy)>c.r)
+	{
+		return false;
+	}
+
+	double dis2=dx*dx+dy*dy;
+	return (c.r*c.r>dis2);
 }

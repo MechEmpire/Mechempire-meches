@@ -92,7 +92,7 @@ void obstacle_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 	for (int i = 0; i <= 1; i++)
 	{
 
-		if (bool obstacle_judge = HitTestCircles_fake(info.robotInformation[myID].circle, info.obstacle[i],1,1.1))
+		if (bool obstacle_judge = HitTestCircles_fake(info.robotInformation[myID].circle, info.obstacle[i],1,1.15))
 		{
 			if (Angle(me.circle.x, me.circle.y, info.obstacle[i].x - me.circle.x, info.obstacle[i].y - me.circle.y) <= 90.0)
 			{
@@ -103,6 +103,7 @@ void obstacle_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 	}
 	
 }
+
 void escape_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
 	auto& me = info.robotInformation[myID];
@@ -139,7 +140,7 @@ void escape_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& i
 		r_expansion = 3;
 		break;
 	case WT_PlasmaTorch:
-		r_expansion = 2.7;
+		r_expansion = 2.5;
 		break;
 	}
 	
@@ -148,22 +149,23 @@ void escape_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& i
 			//如果更大半径内碰得到，处于两圆中间地带
 			if (HitTestCirclePoint_own(me.circle, target.circle.x, target.circle.y,r_expansion))
 			{
-
+				//半成品，最重要的部分，核心科技！
+				//double dx = cos(me.engineRotation);
+				//double dy = sin(me.engineRotation);
 				double dx = target.circle.x - me.circle.x;
 				double dy = target.circle.y - me.circle.y;
-
 				double dt = atan2(dy, dx)*180.0 / PI - target.rotation;
 				AngleAdjust(dt);
-				double dt2 = atan2(dy, dx)*180.0 / PI - me.engineRotation;
-				AngleAdjust(dt2);
+				//double dt2 = atan2(dy, dx)*180.0 / PI - me.engineRotation;
+				//AngleAdjust(dt2);
 
 
-				if (dt >= 160.0&&dt <= 180)
+				if (dt >= 150.0&&dt <= 180)
 				{
 					order.eturn = 1;//顺时针
 					
 				}
-				else if (dt <= -160 && dt >= -180)
+				else if (dt <= -150 && dt >= -180)
 				{
 					order.eturn = -1;//逆时针
 				}
@@ -185,6 +187,9 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 			order.eturn = 1;
 		else if (me.engineRotation >180 && me.engineRotation<270)
 			order.eturn = -1;
+		else if(me.engineRotation ==270)//等于 情况目前简化
+			order.eturn = 1;
+		
 	}
 		
 	if (me.circle.y + me.circle.r+70 == info.boundary.height)
@@ -192,6 +197,8 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 		if (me.engineRotation >0 && me.engineRotation<90)
 			order.eturn = -1;
 		else if (me.engineRotation >90 && me.engineRotation <180)
+			order.eturn = 1;
+		else if (me.engineRotation == 90)//等于 情况目前简化
 			order.eturn = 1;
 	}
 
@@ -201,6 +208,8 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 			order.eturn = 1;
 		else if (me.engineRotation >270)
 			order.eturn = -1;
+		else if (me.engineRotation == 0)//等于 情况目前简化
+			order.eturn = 1;
 	}
 
 	if (me.circle.x - me.circle.r-70== 0)
@@ -208,6 +217,8 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 		if (me.engineRotation >90 && me.engineRotation < 180)
 			order.eturn = -1;
 		else if (me.engineRotation >180 && me.engineRotation < 270)
+			order.eturn = 1;
+		else if (me.engineRotation == 180)//等于 情况目前简化
 			order.eturn = 1;
 	}
 
@@ -237,7 +248,7 @@ void boundry_hit2(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 			order.eturn = 1;
 	}
 
-	if (me.circle.x + me.circle.r + 5 == info.boundary.width)
+	if (me.circle.x + me.circle.r + 5== info.boundary.width)
 	{
 		if (me.engineRotation >0 && me.engineRotation < 90)
 			order.eturn = 1;
@@ -256,17 +267,34 @@ void boundry_hit2(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 }
 
 
-void fire_or_not(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+void fire_or_not(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID,double firerange)
 {
 	auto& me = info.robotInformation[myID];
 	auto& target = info.robotInformation[1 - myID];
-	if (bool obstacle_judge = HitTestCircles_fake(info.robotInformation[myID].circle, info.robotInformation[1-myID].circle,2,1))
+	
+	if (bool obstacle_judge = HitTestCircles_fake(info.robotInformation[myID].circle, info.robotInformation[1 - myID].circle, firerange, 1))
 	{
 		order.fire = 1;
 	}
 }
 
+void waste_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	auto& me = info.robotInformation[myID];
+	auto& target = info.robotInformation[1 - myID];
+	order.run = 1;
+	double dx = target.circle.x - me.circle.x;
+	double dy = target.circle.y - me.circle.y;
+	double dt = atan2(dy, dx)*180.0 / PI - me.engineRotation;
+	AngleAdjust(dt);
 
+	if (dt <= 0 && dt >= -90)
+		order.eturn = 1;
+	else if (dt > 0 && dt <= 90)
+		order.eturn = -1;
+	else
+		engine_drive(target.circle.x, target.circle.y, order, info, myID);
+}
 
 
 
@@ -291,24 +319,24 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		p = 0;
 	else
 		p = 1;
-	double flag = 0;
-
+	
+	double flag = 0;//默认状态
+	double firerange = 2;//默认开火距离
 
 	weapon_rotation(order, info, myID);//任何情况下炮口都得对着敌人
     
-	//目前写的是大炮坦克专杀 && (target.engineTypeName == ET_AFV || target.engineTypeName == ET_GhostTank)
+	//目前写的是大炮坦克专杀 
 	if (target.weaponTypeName == WT_Cannon)
 	{
-
 		if (info.arsenal[p].respawning_time == 0)
 		{
-			double flag = 1;
+			double flag = 1;//去吃弹药状态
 			engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
 		}
 		else
 		{
 
-			if (target.remainingAmmo - me.hp / 25 > 0 && dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) <= 510)
+			if (target.remainingAmmo - me.hp / 25 > 0 && dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) <= 500)
 			{
 				//消耗子弹方案
 				order.run = 1;
@@ -325,25 +353,90 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 					engine_drive(target.circle.x, target.circle.y, order, info, myID);
 			}
 			else
-			    engine_drive(target.circle.x, target.circle.y, order, info, myID);
-			
+				engine_drive(target.circle.x, target.circle.y, order, info, myID);
+
 		}
-	 }
-	
-	else
+		/*
+		if (dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) > 600)
+		{
+			if (info.arsenal[p].respawning_time == 0 )
+			{
+				double flag = 1;//去吃弹药状态
+				engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
+			}
+			else 
+				engine_drive(target.circle.x, target.circle.y, order, info, myID);
+
+		}
+		else
+		{
+			if (dis(me.circle.x, me.circle.y, arsenal[p].circle.x, arsenal[p].circle.y)<dis(target.circle.x, target.circle.y, arsenal[p].circle.x, arsenal[p].circle.y))
+			{
+				if (info.arsenal[p].respawning_time == 0)
+				{
+					double flag = 1;//去吃弹药状态
+					engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
+				}
+				else if (target.remainingAmmo - me.hp / 25 >0)
+				{
+					//消耗子弹方案
+					waste_bullet(order, info, myID);
+				}
+				else
+					engine_drive(target.circle.x, target.circle.y, order, info, myID);
+
+
+			}
+			else
+			{
+				if (target.remainingAmmo - me.hp / 25 > 0)
+				{
+					//消耗子弹方案
+					waste_bullet(order, info, myID);
+				}
+				else
+					engine_drive(target.circle.x, target.circle.y, order, info, myID);
+			}
+		}
+		*/
+	}
+	else if (target.weaponTypeName == WT_ElectricSaw)
+	{
+		firerange = 2.2;
+		if (target.hp >= me.hp&&dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) <= 800)
+		{
+			order.run = 1;
+			double dx = target.circle.x - me.circle.x;
+			double dy = target.circle.y - me.circle.y;
+			double dt = atan2(dy, dx)*180.0 / PI - me.engineRotation;
+			AngleAdjust(dt);
+			if (dt <= 0 && dt >= -90)
+				order.eturn = 1;
+			else if (dt > 0 && dt <= 90)
+				order.eturn = -1;
+			else
+				engine_drive(target.circle.x, target.circle.y, order, info, myID);
+		}
+		else
+			engine_drive(target.circle.x, target.circle.y, order, info, myID);
+	}
+	else //目前是非大炮，电锯  都往上冲
 	{
 		engine_drive(target.circle.x, target.circle.y, order, info, myID);
 	}
-
+    
+	
+	
 	obstacle_hit(order, info, myID);
 	
 	escape_bullet(order, info, myID);
-	if (flag!=1)
-	   boundry_hit(order, info, myID);
+
+	if (flag == 1 && ((me.circle.x <= 60 && me.circle.y >= 610) || (me.circle.x >= 1290 && me.circle.y <= 60)))
+		boundry_hit2(order, info, myID);
 	else
-	   boundry_hit2(order, info, myID);
+	   boundry_hit(order, info, myID);
 	
-	fire_or_not(order, info, myID);
+	fire_or_not(order, info, myID, firerange);
 
 	//order.run=Random(1, 4);
 	
@@ -393,7 +486,7 @@ string RobotAI::GetName()
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "ui";
+	return "Pain";
 }
 
 

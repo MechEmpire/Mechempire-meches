@@ -16,14 +16,38 @@ RobotAI::~RobotAI()
 //1.必须完成的战斗核心
 //-----------------------------------------------------
 
-
+void Aim (RobotAI_Order & order,const RobotAI_BattlefieldInformation& info, int myID) {
+    double a=atan2(info.robotInformation[1-myID].circle.y-info.robotInformation[myID].circle.y,info.robotInformation[1-myID].circle.x-info.robotInformation[myID].circle.x);
+	double c=info.robotInformation[myID].weaponRotation;
+	if(-180<a<-90||90<a<=180){       
+		   a=a+PI;
+	       AngleToRadian(c);
+		   c+=PI;
+		   RadianToAngle(c);
+		   RadianToAngle(a);
+	   }
+	if(-90<=a<=90){
+		RadianToAngle(a);
+	}
+    double b=a-c;
+   // AngleAdjust(b);
+    if(b>1e-4){
+	order.wturn=1;
+    }
+	else if(b<-1e-4){
+		 order.wturn=-1;
+	}
+	      else{
+		      order.wturn=0;
+	      }
+      
+}
 void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID)
 {
-	if(info.robotInformation[myID].weaponRotation!=0) {
-		order.wturn=1;
-	}
+
+	Aim(order,info, myID);
 	order.fire=1;
-	    if(info.robotInformation[myID].engineRotation!=90&&info.robotInformation[myID].remainingAmmo==0){
+    if(info.robotInformation[myID].engineRotation!=90&&info.robotInformation[myID].remainingAmmo==0){
 		 order.eturn=1;
 	}
 	if(info.robotInformation[myID].engineRotation==90&&info.robotInformation[myID].remainingAmmo==0){
@@ -33,9 +57,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		order.eturn=-1;
 	    if(info.robotInformation[myID].engineRotation==0&&info.robotInformation[myID].remainingAmmo!=0){
 		    order.run=1;
-		}
-		if(info.robotInformation[myID].weaponRotation!=-90){
-			order.wturn=1;
 		}
 	}
 	//帧操纵函数
@@ -174,5 +195,5 @@ void RobotAI::onHit(int launcherID,bullettypename btn)
 }
 
 
-
+	
 //TODO:这里可以实现你自己的函数
