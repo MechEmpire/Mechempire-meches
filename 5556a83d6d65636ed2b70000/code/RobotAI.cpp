@@ -4,7 +4,7 @@
 #define Rright (order.run =2)
 #define Rup (order.run =3)
 #define Rdown (order.run =4)
-#define ins 25
+#define ins 15
 double howfar(double x, double y, double x1, double y1)
 {
 	return sqrt(pow(x-x1,2) + pow(y-y1,2));
@@ -32,7 +32,7 @@ double getAngle(Circle a, Circle b)
 	return A.r;
 }
 
-aa turnfire(Circle B, double rf, Circle o ,int state)
+aa turnfire(Circle B, double rf, Circle o ,int state, Circle v )
 {
 	double A;
 	int fire = 0;
@@ -54,34 +54,83 @@ aa turnfire(Circle B, double rf, Circle o ,int state)
 		}
 		else
 		{
-			double ro;
-			ro = RadianToAngle(asin(o.r / A));
-			double ro0;
-			ro0 = getAngle(B, o);
-			double rf0;
-			rf0 = AnglePlus(rf, -ro0);
-			if (abs(rf0) > 7.5 + ro)
+			
+			double l[90] = {0};
+		//	system("pause");
+			for (int r = -180; r < 180; r = r + 4)
 			{
-				fire = 0;
-				if (rf0 > 0) wturn = -1;
-				else wturn = 1;
-			}
-			if (abs(rf0) <= 7.5 + ro && abs(rf0) >= ro - 7.5)
-			{
-				double a;
-				a = (ro - abs(rf0) + 7.5) / 15;
-				if (a > 0.8) fire = 1;
-				else  fire = 0;
-				if (rf0 > 0) wturn = -1;
-				else wturn = 1;
-			}
-			if (abs(rf0) < ro - 7.5) 
-			{ 
-				fire = 1; 
-				if (A <= o.r + 50)
+				Point p = {0};
+				B.r = tan(r * PI/180.0);
+				if (v.x != 0&&r!=90&&r!=270)
 				{
-					if (rf0 > 0) wturn = -1;
-					else wturn = 1;
+					double k = v.y / v.x;
+					p.x = (o.y - k*o.x + B.r*B.x - B.y) / (B.r - k);
+					p.y = (B.r*o.y - k*B.y + B.r*k*(B.x - o.x)) / (B.r - k);
+				}
+				if (v.x == 0)
+				{
+					p.x = o.x;
+					p.y = B.r*(o.x - B.x) + B.y;
+				}
+				//cout << r<< '\n';
+				//cout << v.x << '\n';
+				//cout <<B.r<< '\n';
+				//cout << p.x << '\t' << p.y << '\n';
+				
+				if (p.x>0 && p.x < 1366 && p.y>0 && p.y < 680)
+				{
+					double t1, t2 = 0;
+					t1 = (p.x - B.x) / (11 * cos(r*PI / 180.0));
+					if (t1 < 0){ l[(r + 180) / 4] = -1; continue; }
+					if (t1 < 1){ t1 = (p.y - B.y) / (11 * sin(r*PI / 180.0)); }
+					Point p1;
+					p1.x = o.x + t1*v.x;
+					p1.y = o.y + t1*v.y;
+					l[(r + 180) / 4] = howfar(p1.x, p1.y, p.x, p.y);
+				//	cout << l[(r + 180) / 4] << '\n';
+					//cout << "t1:" << t1 << '\n';
+				//	cout << r << '\n';
+				//	cout << p1.x << '\n';
+					//cout << p1.y << '\n';
+				}
+				
+			}
+			int rm = -180;
+			double af = 10000;
+			for (int i = 0; i < 90; i++)
+			{
+				if (l[i] <= 0)continue;
+				if (l[i] < af){ rm = 4 * i - 180; af = l[i]; }
+			}
+			//cout << rm << '\n';
+		//	cout << af << '\n';
+			af = AnglePlus(rf, -rm);
+			if (af>3)wturn = -1;
+			if (af < -3)wturn = 1;
+			Point p;
+			B.r = tan(rf / 180.0 * PI);
+			if (v.x != 0)
+			{
+				double k = v.y / v.x;
+				p.x = (o.y - k*o.x + B.r*B.x - B.y) / (B.r - k);
+				p.y = (B.r*o.y - k*B.y + B.r*k*(B.x - o.x)) / (B.r - k);
+			}
+			if (v.x == 0)
+			{
+				p.x = o.x;
+				p.y = B.r*(o.x - B.x) + B.y;
+			}
+			if (p.x > 0 && p.x < 1366 && p.y>0 && p.y < 680)
+			{
+				double t1, t2 = 0;
+				t1 = (p.x - B.x) / (11 * cos(rf*PI / 180));
+				if (t1 < 1 && t1>0){ t1 = (p.y - B.y) / (11 * sin(rf*PI / 180)); }
+				Point p1;
+				if (t1 > 0)
+				{
+					p1.x = o.x + t1*v.x;
+					p1.y = o.y + t1*v.y;
+					if (howfar(p1.x, p1.y, p.x, p.y) < 1.05*o.r)fire = 1;
 				}
 			}
 		}
@@ -106,17 +155,17 @@ aa turnfire(Circle B, double rf, Circle o ,int state)
 			ro0 = getAngle(B, o);
 			double rf0;
 			rf0 = AnglePlus(rf, -ro0);
-			if (abs(rf0) > 7.5 + ro) fire = 1;
-			if (abs(rf0) <= 7.5 + ro && abs(rf0) >= ro - 7.5)
+			if (abs(rf0) > 3.5 + ro) fire = 1;
+			if (abs(rf0) <= 3.5 + ro && abs(rf0) >= ro - 3.5)
 			{
 				double a;
-				a = (abs(rf0) - ro + 7.5) / 15;
+				a = (abs(rf0) - ro + 3.5) / 7;
 				if (a > 0.999) fire = 1;
 				else  fire = 0;
 				if (rf0 > 0) wturn = 1;
 				else wturn = -1;
 			}
-			if (abs(rf0) < ro - 7.5) 
+			if (abs(rf0) < ro - 3.5) 
 			{
 				fire = 0; 
 				if (rf0 > 0) wturn = 1;
@@ -129,26 +178,26 @@ aa turnfire(Circle B, double rf, Circle o ,int state)
 	return a;
 }
 
-void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn)
+void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn,Circle v)
 {
 	fire = 0;
 	Circle B = {0};
-	B.x = m.x + 45 * cos(AngleToRadian(rf));
-	B.y = m.y + 45 * sin(AngleToRadian(rf));
+	B.x = m.x + 69 * cos(AngleToRadian(rf));
+	B.y = m.y + 69 * sin(AngleToRadian(rf));
 	aa a;
-	a = turnfire(B, rf, o, 0);
+	a = turnfire(B, rf, o, 0,v);
 	fire = a.x;
 	wturn = a.y;
 	Circle A[2] = { 300, 250, 76, 1066, 430, 76 };
 	if (howfar(B.x, B.y, A[0].x, A[0].y) <= howfar(B.x, B.y, o.x, o.y))
 	{
-		a = turnfire(B, rf, A[0], 1);
+		a = turnfire(B, rf, A[0], 1,v);
 		if (fire == 1) fire = a.x;
 		if (wturn == 0) wturn = a.y;
 	}
 	if (howfar(B.x, B.y, A[1].x, A[1].y) <= howfar(B.x, B.y, o.x, o.y))
 	{
-		a = turnfire(B, rf, A[1], 1);
+		a = turnfire(B, rf, A[1], 1,v);
 		if (fire == 1) fire = a.x;
 		if (wturn == 0) wturn = a.y;
 	}
@@ -189,12 +238,44 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	Circle m = info.robotInformation[myID].circle;
 	Circle o = info.robotInformation[1 - myID].circle;
 	o.r = o.r - 1;
-	controlfire(m, o, radfire, order.fire, order.wturn);
-	static int t = 0;
+	Circle v;
+	v.x = info.robotInformation[1 - myID].vx;
+	v.y = info.robotInformation[1 - myID].vy;
+	v.r = info.robotInformation[1 - myID].vr;
+	//cout << v.x << '\n';
+	//system("pause");
+	controlfire(m, o, radfire, order.fire, order.wturn,v);
+	RobotAI_BulletInformation a[200];
+	for (int i = 0; i < info.num_bullet; ++i)
+		a[i] = info.bulletInformation[i];
+
 	order.run = 1;
-	t++;
-	if (t < 45)
-		order.eturn = 1;
+	double ro;
+	ro = getAngle(m, o);
+	ro = AnglePlus(info.robotInformation[myID].engineRotation, -ro);
+	if (info.robotInformation[1 - myID].weaponTypeName != WT_ElectricSaw)
+	{
+		if (ro>0) order.eturn = -1;
+		if (ro < 0) order.eturn = 1;
+	}
+	else
+	{
+		if (howfar(m.x, m.y, o.x, o.y) > 500)
+		{
+			if (ro>0) order.eturn = -1;
+			if (ro < 0) order.eturn = 1;
+		}
+		else
+		{
+			if (ro>0) order.eturn = 1;
+			if (ro < 0) order.eturn = - 1;
+		}
+		static int tt = 0;
+		tt++;
+		if (tt < 40)order.eturn = 0;
+	}
+
+	
 		
 }
 
@@ -212,8 +293,8 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_Tesla;	//啊，我爱
-	engine = ET_Shuttle;	//啊，我爱
+	weapon = WT_Machinegun;	//啊，我爱
+	engine = ET_AFV;	//啊，我爱
 }
 
 
@@ -234,7 +315,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "Tesla";
+	return "Swer";
 }
 
 string RobotAI::GetAuthor()

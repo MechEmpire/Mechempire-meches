@@ -283,7 +283,7 @@ string RobotAI::GetName()
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "雷系魔法使*薇薇安";
+	return "雷系魔法使薇薇安";
 }
 
 
