@@ -15,7 +15,17 @@ RobotAI::~RobotAI()
 //-----------------------------------------------------
 //1.必须完成的战斗核心
 //-----------------------------------------------------
-
+int i_jishu = 1;
+void shoot(RobotAI_Order& order, double x1, double y1, const RobotAI_BattlefieldInformation& info, int myID);
+void walkrotation(RobotAI_Order& order, double rio, const RobotAI_BattlefieldInformation& info, int myID);
+void walkpoint(RobotAI_Order& order, double x1, double y1, const RobotAI_BattlefieldInformation& info, int myID);
+void duozidan(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+void raojiaoluo(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+void duozhangai(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+void daweisuo(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+void dadianju(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+void dajiqiang(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
+void dajianong(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
 void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
 {
 	//帧操纵函数
@@ -24,25 +34,22 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	//		info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
-	double distance;
+	
 	const double eps = 1e-3;
 	double R = info.robotInformation[myID].circle.r;
 	double x0 = info.robotInformation[myID].circle.x;
 	double y0 = info.robotInformation[myID].circle.y;
 	double x1 = info.robotInformation[1 - myID].circle.x;
 	double y1 = info.robotInformation[1 - myID].circle.y;
+	double distance = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0));
 	double k1 = atan2(y1 - y0, x1 - x0) * 180 / 3.14;
 	double k2_jh1 = atan2(y0 - 630, x0 - 50) * 180 / 3.14;
 	double k2_jh2 = atan2(y0 - 50, x0 - 1316) * 180 / 3.14;
 	double deviation = ((y1 - y0) / (x1 - x0));
-	distance = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0));
-	double hittime = distance / 11;
-	bool isdj = false, isws = false, firstrate_shoot = false, isjq = false;
+	double hittime = distance / 15;
+	bool isdj = false, isws = false, firstrate_shoot = false, isjq = false, isyf = false,isshu = false;
 	//判断是否是ws
-	
-	if (info.robotInformation[1 - myID].engineTypeName == ET_Shuttle)
-		isws = false;
-	else if (info.robotInformation[1 - myID].weaponTypeName == WT_Prism || info.robotInformation[1 - myID].weaponTypeName == WT_MissileLauncher || info.robotInformation[1 - myID].weaponTypeName == WT_Tesla)
+ if (info.robotInformation[1 - myID].weaponTypeName == WT_Prism || info.robotInformation[1 - myID].weaponTypeName == WT_MissileLauncher || info.robotInformation[1 - myID].weaponTypeName == WT_Tesla)
 		isws = true;
 	else
 		isws = false;
@@ -52,14 +59,22 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	else
 		isdj = false;
 	//判断是否是机枪
-	if (info.robotInformation[1 - myID].weaponTypeName == WT_Machinegun)
-		isdj = true;
+	 if (info.robotInformation[1 - myID].weaponTypeName == WT_Machinegun)
+		isjq = true;
 	else
-		isdj = false;
+		isjq = false;
+	//判断是否是UFO
+	if (info.robotInformation[1 - myID].engineTypeName == ET_UFO)
+		isyf = true;
+	else isyf = false;
+	//判断是否是shuttle
+	if (info.robotInformation[1 - myID].engineTypeName == ET_Shuttle)
+		isshu = true;
+	else isshu = false;
 	//判断第一帧是否射击；
 	double dis_first0 = sqrt((x0 - 50)*(x0 - 50) + (y0 - 50)*(y0 - 50));
 	double dis_first1 = sqrt((x0 - 1316)*(x0 - 1316) + (y0 - 630)*(y0 - 630));
-	if (dis_first0 < 2 || dis_first1 < 2)
+	if (dis_first0 < 5 || dis_first1 < 5)
 		firstrate_shoot = false;
 	else firstrate_shoot = true;
 	//判断是否碰到障碍物
@@ -76,19 +91,26 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	double x1n = info.robotInformation[1 - myID].vx * hittime + x1;
 	double y1n = info.robotInformation[1 - myID].vy * hittime + y1;
 	double x1ng, y1ng;
-	if (x1n > 1366)
+	if (isyf == true)
+	{
 		x1ng = x1;
-	else x1ng = x1n;
-	if (x1n < 0)
-		x1ng = x1;
-	else x1ng = x1n;
-	if (y1n > 680)
 		y1ng = y1;
-	else y1ng = y1n;
-	if (y1n < 0)
-		y1ng = y1;
-	else y1ng = y1;
-	
+	}
+	else if (isyf == false)
+	{
+		if (x1n > 1366)
+			x1ng = x1;
+		else x1ng = x1n;
+		if (x1n < 0)
+			x1ng = x1;
+		else x1ng = x1n;
+		if (y1n > 680)
+			y1ng = y1;
+		else y1ng = y1n;
+		if (y1n < 0)
+			y1ng = y1;
+		else y1ng = y1;
+	}
 	// 判断敌方机甲在那个弹药库附近
 	double dis_enemyammo1, dis_enemyammo2, dis_meammo1, dis_meammo2;
 	int b1 = 0;
@@ -106,72 +128,22 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	}
 
 	//射击
-	if (distance > 800 && isws == false)
+	if (distance > 300 && isws == false && distance < 900)
 	{
-		double dx = x1ng - x0;
-		double dy = y1ng - y0;
-		double theta = atan2(dy, dx)*180.0 / PI;
-		double mt = info.robotInformation[myID].weaponRotation;
-		double dt = theta - mt;
-		AngleAdjust(dt);
-		const double eps = 1e-3;
-
-		if (dt > eps){
-			order.wturn = 1;
-		}
-		else if (dt < -eps){
-			order.wturn = -1;
-		}
-		else {
-			order.wturn = 0;
-
-		}
-		if (p != 1 && firstrate_shoot == true)
+		shoot(order, x1ng, y1ng, info, myID);
+		if (p != 1 
+			&& firstrate_shoot == true)
 			order.fire = 1;
 	}
-	else if (distance < 800 && isws == false)
+	else if (distance < 300 && isws == false)
 	{
-		double dx = x1ng - x0;
-		double dy = y1ng - y0;
-		double theta = atan2(dy, dx)*180.0 / PI;
-		double mt = info.robotInformation[myID].weaponRotation;
-		double dt = theta - mt;
-		AngleAdjust(dt);
-		const double eps = 1e-3;
-
-		if (dt > eps){
-			order.wturn = 1;
-		}
-		else if (dt < -eps){
-			order.wturn = -1;
-		}
-		else {
-			order.wturn = 0;
-
-		}
+		shoot(order, x1, y1, info, myID);
 		if (p != 1 && firstrate_shoot == true)
 			order.fire = 1;
 	}
 	else if (isws == true && distance < 500)
 	{
-		double dx = x1ng - x0;
-		double dy = y1ng - y0;
-		double theta = atan2(dy, dx)*180.0 / PI;
-		double mt = info.robotInformation[myID].weaponRotation;
-		double dt = theta - mt;
-		AngleAdjust(dt);
-		const double eps = 1e-3;
-
-		if (dt > eps){
-			order.wturn = 1;
-		}
-		else if (dt < -eps){
-			order.wturn = -1;
-		}
-		else {
-			order.wturn = 0;
-
-		}
+		shoot(order, x1ng, y1ng, info, myID);
 		if (p != 1 && firstrate_shoot == true)
 			order.fire = 1;
 	}
@@ -179,525 +151,85 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	order.run = 1;
 	if (info.robotInformation[myID].remainingAmmo > 2)
 	{
-		if (isdj == true)//距离要边远
+		if (isdj == true && isshu == false)//距离要边远 勾引
 		{
-			if (distance > 500)
-			{
-				
-				double dx1 = 300 - x0;
-				double dy1 = 600 - y0;
-				double theta1 = atan2(dy1, dx1)*180.0 / PI;
-				double dt1 = theta1 - info.robotInformation[myID].engineRotation;
-				AngleAdjust(dt1);
-				if (dt1 > eps){
-					order.eturn = 1;
-				}
-				else if (dt1 < -eps){
-					order.eturn = -1;
-				}
-				else {
-					order.eturn = 0;
-
-				}
-				if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y > 400)
-					//&& info.robotInformation[myID].engineRotation != -90)
-				{
-
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = -90 - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-
-				}
-				else if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y < 100)
-					//&& info.robotInformation[myID].engineRotation != 0.0)
-				{
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = -mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-				else if (info.robotInformation[myID].circle.x >1300 && info.robotInformation[myID].circle.y < 100)
-					//&& info.robotInformation[myID].engineRotation != 90)
-				{
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = 90 - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-				else if (info.robotInformation[myID].circle.x > 1200 && info.robotInformation[myID].circle.y > 500)
-					//&& info.robotInformation[myID].engineRotation != 180)
-				{
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = 180 - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-				else
-				{
-					order.eturn = 0;
-				}
-			}
-			else if (distance < 500)
-			{
-				if (y0 > 340)
-				{
-					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
-					double rr = theta - 90 - info.robotInformation[myID].engineRotation;
-					AngleAdjust(rr);
-					if (rr > eps){
-						order.eturn = 1;
-					}
-					else if (rr < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-					}
-				}
-				else if (y0 < 340)
-				{
-					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
-					double rr = theta + 90 - info.robotInformation[myID].engineRotation;
-					AngleAdjust(rr);
-					if (rr > eps){
-						order.eturn = -1;
-					}
-					else if (rr < -eps){
-						order.eturn = 1;
-					}
-					else {
-						order.eturn = 0;
-					}
-				}
-			}
+			dadianju(order, info, myID);
+		}
+		else if (isws == true && isshu == false)//测试效果很好
+		{
+			daweisuo(order, info, myID);
+		}
+		else if (isjq == true && isshu == false)//效果不好 改
+		{
 			
-			}
-
-			else if (isws == true)//测试效果很好
-			{
-				double dis_me_za0 = sqrt((300 - x0)*(300 - x0) + (250 - y0)*(250 - y0));
-				double dis_me_za1 = sqrt((1066 - x0)*(1066 - x0) + (430 - y0)*(430 - y0));
-				double dx1 = x1 - x0;
-				double dy1 = y1 - y0;
-				double theta1 = atan2(dy1, dx1)*180.0 / PI;
-				double dt1 = theta1 - info.robotInformation[myID].engineRotation;
-				AngleAdjust(dt1);
-				if (distance > 10)
-				{
-					if (dis_me_za0 < 200)
-					{
-						double mt = info.robotInformation[myID].engineRotation;
-						double dt = dt1 + 35 - mt;
-						AngleAdjust(dt);
-						const double eps = 1e-3;
-
-						if (dt > eps){
-							order.eturn = 1;
-						}
-						else if (dt < -eps){
-							order.eturn = -1;
-						}
-						else {
-							order.eturn = 0;
-
-						}
-					}
-					else if (dis_me_za1 < 200)
-					{
-						double mt = info.robotInformation[myID].engineRotation;
-						double dt = dt1 + 35 - mt;
-						AngleAdjust(dt);
-						const double eps = 1e-3;
-
-						if (dt > eps){
-							order.eturn = 1;
-						}
-						else if (dt < -eps){
-							order.eturn = -1;
-						}
-						else {
-							order.eturn = 0;
-
-						}
-					}
-					else
-					if (dis_me_za0 > 75 || dis_me_za1 > 75)
-					{
-						double mt = info.robotInformation[myID].engineRotation;
-						double dt = dt1 - mt;
-						AngleAdjust(dt);
-						const double eps = 1e-3;
-
-						if (dt > eps){
-							order.eturn = 1;
-						}
-						else if (dt < -eps){
-							order.eturn = -1;
-						}
-						else {
-							order.eturn = 0;
-
-						}
-					}
-				}
-				else
-				{
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = dt1 - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-			}
-			//	else if (isjq == true)
-			//	{
-
-			//	}
-			else
-			{
-				double dx1 = 300 - x0;
-				double dy1 = 600 - y0;
-				double theta1 = atan2(dy1, dx1)*180.0 / PI;
-				double dt1 = theta1 - info.robotInformation[myID].engineRotation;
-				AngleAdjust(dt1);
-				if (dt1 > eps){
-					order.eturn = 1;
-				}
-				else if (dt1 < -eps){
-					order.eturn = -1;
-				}
-				else {
-					order.eturn = 0;
-
-				}
-				//以前的行走方式 绕圈
-				if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y > 400)
-					//&& info.robotInformation[myID].engineRotation != -90)
-				{
-					
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = -90 - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-				else if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y < 100)
-					//&& info.robotInformation[myID].engineRotation != 0.0)
-				{
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt =  - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-				else if (info.robotInformation[myID].circle.x >1300 && info.robotInformation[myID].circle.y < 100)
-					//&& info.robotInformation[myID].engineRotation != 90)
-				{
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = 90 - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-				else if (info.robotInformation[myID].circle.x > 1200 && info.robotInformation[myID].circle.y > 500)
-					//&& info.robotInformation[myID].engineRotation != 180)
-				{
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = 180 - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-				else
-				{
-					order.eturn = 0;
-				}
-				//绕行robot
-				double dis_xu = y0;
-				double dis_xb = 680 - y0;
-				double dis_yl = x0;
-				double dis_yr = 1366 - x0;
-				if (distance < 600)
-				{
-					if (dis_xu > dis_xb)
-					{
-						double rr = info.robotInformation[1 - myID].engineRotation - 90;
-						double mt = info.robotInformation[myID].engineRotation;
-						double dt = rr - mt;
-						AngleAdjust(dt);
-						const double eps = 1e-3;
-
-						if (dt > eps){
-							order.eturn = 1;
-						}
-						else if (dt < -eps){
-							order.eturn = -1;
-						}
-						else {
-							order.eturn = 0;
-
-						}
-					}
-					else if (dis_xu < dis_xb)
-					{
-						double rr = info.robotInformation[1 - myID].engineRotation + 90;
-						double mt = info.robotInformation[myID].engineRotation;
-						double dt = rr - mt;
-						AngleAdjust(dt);
-						const double eps = 1e-3;
-
-						if (dt > eps){
-							order.eturn = 1;
-						}
-						else if (dt < -eps){
-							order.eturn = -1;
-						}
-						else {
-							order.eturn = 0;
-
-						}
-					}
-				}
-				//工程浩大的躲子弹233333
-				double vx_bullet_near, vy_bullet_near, dis_bullet_near = 9999, dis_bullet_0, db, x_b, y_b, dis_bullet_1;
-				bool bullet_me = false;
-				int i_b;
-				for (i_b = 0; i_b < info.num_bullet; i_b++)
-				{
-					if (info.bulletInformation[i_b].launcherID == 1 - myID)
-					{
-						dis_bullet_0 = sqrt((x_b - x0) * (x_b - x0) + (y_b - y0)*(y_b - y0));
-					}
-					if (dis_bullet_0 < dis_bullet_near)
-					{
-						dis_bullet_near = dis_bullet_0;
-						vx_bullet_near = info.bulletInformation[i_b].vx;
-						vy_bullet_near = info.bulletInformation[i_b].vy;
-						x_b = info.bulletInformation[i_b].circle.x;
-						y_b = info.bulletInformation[i_b].circle.y;
-						db = atan2(vy_bullet_near, vx_bullet_near);
-						AngleAdjust(db);
-					}
-				}
-				Beam bullet_b = { x_b, y_b, db, x_b + vx_bullet_near, y_b + vy_bullet_near };
-				Circle me = { x0, y0, 55 };
-				bullet_me = HitTestBeamCircle(bullet_b, me);
-				if (bullet_me == true)
-				{
-					double theta;
-					if (db > info.robotInformation[myID].engineRotation)
-						theta = db + 90;
-					else theta = db - 90;
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = theta - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
-				}
-
-			}
+			dajiqiang(order, info, myID);
+	//		duozidan(order, info, myID);
+		
+			
 		}
-		else if (info.robotInformation[myID].remainingAmmo <= 2)
+		else if (isshu == true)//仍需要测试
 		{
-
-			//info.arsenal[q].respawning_time;
-			//捡弹药库
-			if (info.robotInformation[myID].remainingAmmo <= 2)
+			walkpoint(order, 600, 300, info, myID);
+			raojiaoluo(order, info, myID);
+		}
+		else 
+		{
+			walkpoint(order, 600, 300, info, myID);
+			raojiaoluo(order, info, myID);
+			duozidan(order, info, myID);
+			duozhangai(order, info, myID);
+			dajianong(order, info, myID);
+			//绕行robot
+			/*double dis_xu = y0;
+			double dis_xb = 680 - y0;
+			double dis_yl = x0;
+			double dis_yr = 1366 - x0;
+			if (distance < 600)
 			{
-				if (b1 == 2 && info.arsenal[0].respawning_time == 0)
+				if (dis_xu > dis_xb)
 				{
-					double dx = 50 - x0;
-					double dy = 630 - y0;
-					double theta = atan2(dy, dx)*180.0 / PI;
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = theta - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
+					double rr = info.robotInformation[1 - myID].engineRotation - 90;
+					walkrotation(order, rr, info, myID);
 				}
-				else if (b1 == 1 && info.arsenal[1].respawning_time == 0)
+				else if (dis_xu < dis_xb)
 				{
-					double dx = 1316 - x0;
-					double dy = 50 - y0;
-					double theta = atan2(dy, dx)*180.0 / PI;
-					double mt = info.robotInformation[myID].engineRotation;
-					double dt = theta - mt;
-					AngleAdjust(dt);
-					const double eps = 1e-3;
-					if (dt > eps){
-						order.eturn = 1;
-					}
-					else if (dt < -eps){
-						order.eturn = -1;
-					}
-					else {
-						order.eturn = 0;
-
-					}
+					double rr = info.robotInformation[1 - myID].engineRotation + 90;
+					walkrotation(order, rr, info, myID);
 				}
-				else
-				{
-					if (dis_meammo1 > dis_meammo2 && info.arsenal[1].respawning_time <= 2)
-					{
-						double dx = 1316 - x0;
-						double dy = 50 - y0;
-						double theta = atan2(dy, dx)*180.0 / PI;
-						double mt = info.robotInformation[myID].engineRotation;
-						double dt = theta - mt;
-						AngleAdjust(dt);
-						const double eps = 1e-3;
-						if (dt > eps){
-							order.eturn = 1;
-						}
-						else if (dt < -eps){
-							order.eturn = -1;
-						}
-						else {
-							order.eturn = 0;
-
-						}
-					}
-					else if (info.arsenal[0].respawning_time == 0)
-					{
-						double dx = 50 - x0;
-						double dy = 630 - y0;
-						double theta = atan2(dy, dx)*180.0 / PI;
-						double mt = info.robotInformation[myID].engineRotation;
-						double dt = theta - mt;
-						AngleAdjust(dt);
-						const double eps = 1e-3;
-						if (dt > eps){
-							order.eturn = 1;
-						}
-						else if (dt < -eps){
-							order.eturn = -1;
-						}
-						else {
-							order.eturn = 0;
-
-						}
-					}
-				}
+			}*/
+			
+		}
+	}
+	if (info.robotInformation[myID].remainingAmmo <= 2)
+	{
+		//info.arsenal[q].respawning_time;
+		//捡弹药库
+		if (b1 == 2 && info.arsenal[0].respawning_time == 0)
+		{
+			walkpoint(order, 50, 630, info, myID);
+		}
+		else if (b1 == 1 && info.arsenal[1].respawning_time == 0)
+		{
+			walkpoint(order, 1316, 50, info, myID);
+		}
+		else
+		{
+			if (dis_meammo1 > dis_meammo2 && info.arsenal[1].respawning_time == 0)
+			{
+				walkpoint(order, 1316, 50, info, myID);
 
 			}
+			else if (info.arsenal[0].respawning_time == 0)
+			{
+				walkpoint(order, 50, 630, info, myID);
+			}
 		}
+	//	duozidan(order, info, myID);
+		raojiaoluo(order, info, myID);
 	}
 
 
+}
 
 
 
@@ -829,3 +361,556 @@ void RobotAI::onHit(int launcherID,bullettypename btn)
 
 
 //TODO:这里可以实现你自己的函数
+void shoot(RobotAI_Order& order, double x1, double y1, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	double dx = x1 - x0;
+	double dy = y1 - y0;
+	double theta = atan2(dy, dx)*180.0 / PI;
+	double mt = info.robotInformation[myID].weaponRotation;
+	double dt = theta - mt;
+	AngleAdjust(dt);
+	const double eps = 1e-3;
+
+	if (dt > eps){
+		order.wturn = 1;
+	}
+	else if (dt < -eps){
+		order.wturn = -1;
+	}
+	else {
+		order.wturn = 0;
+
+	}
+}
+
+void walkrotation(RobotAI_Order& order, double rio, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double mt = info.robotInformation[myID].engineRotation;
+	double dt = rio - mt;
+	AngleAdjust(dt);
+	const double eps = 1e-3;
+
+	if (dt > eps){
+		order.eturn = 1;
+	}
+	else if (dt < -eps){
+		order.eturn = -1;
+	}
+	else {
+		order.eturn = 0;
+
+	}
+}
+
+void walkpoint(RobotAI_Order& order, double x1, double y1, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	double dx = x1 - x0;
+	double dy = y1 - y0;
+	double theta = atan2(dy, dx)*180.0 / PI;
+	double mt = info.robotInformation[myID].engineRotation;
+	double dt = theta - mt;
+	AngleAdjust(dt);
+	const double eps = 1e-3;
+
+	if (dt > eps){
+		order.eturn = 1;
+	}
+	else if (dt < -eps){
+		order.eturn = -1;
+	}
+	else {
+		order.eturn = 0;
+
+	}
+}
+void duozidan(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double vx_bullet_near, vy_bullet_near, dis_bullet_near = 9999, dis_bullet_0, db, x_b, y_b;
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	bool bullet_me = false;
+	int i_b;
+	for (i_b = 0; i_b < info.num_bullet; i_b++)
+	{
+		if (info.bulletInformation[i_b].launcherID == 1 - myID)
+		{
+			dis_bullet_0 = sqrt((x_b - x0) * (x_b - x0) + (y_b - y0)*(y_b - y0));
+		}
+		if (dis_bullet_0 < dis_bullet_near)
+		{
+			dis_bullet_near = dis_bullet_0;
+			vx_bullet_near = info.bulletInformation[i_b].vx;
+			vy_bullet_near = info.bulletInformation[i_b].vy;
+			x_b = info.bulletInformation[i_b].circle.x;
+			y_b = info.bulletInformation[i_b].circle.y;
+			db = atan2(vy_bullet_near, vx_bullet_near);
+			AngleAdjust(db);
+		}
+	}
+	Beam bullet_b = { x_b, y_b, db, x_b + vx_bullet_near, y_b + vy_bullet_near };
+	Circle me = { x0, y0, 55 };
+	bullet_me = HitTestBeamCircle(bullet_b, me);
+	if (bullet_me == true)
+	{
+		double theta;
+		if (db > info.robotInformation[myID].engineRotation)
+			theta = db + 90;
+		else theta = db - 90;
+		walkrotation(order, theta, info, myID);
+	}
+}
+
+void raojiaoluo(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	//以前的行走方式 绕圈
+	if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y > 400)
+		//&& info.robotInformation[myID].engineRotation != -90)
+	{
+
+		walkrotation(order, -90, info, myID);
+	}
+	else if (info.robotInformation[myID].circle.x < 150 && info.robotInformation[myID].circle.y < 100)
+		//&& info.robotInformation[myID].engineRotation != 0.0)
+	{
+		walkrotation(order, 0, info, myID);
+	}
+	else if (info.robotInformation[myID].circle.x >1300 && info.robotInformation[myID].circle.y < 100)
+		//&& info.robotInformation[myID].engineRotation != 90)
+	{
+		walkrotation(order, 90, info, myID);
+	}
+	else if (info.robotInformation[myID].circle.x > 1200 && info.robotInformation[myID].circle.y > 500)
+		//&& info.robotInformation[myID].engineRotation != 180)
+	{
+		walkrotation(order, 180, info, myID);
+	}
+}
+
+void duozhangai(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	double dis_me_za0 = sqrt((300 - x0)*(300 - x0) + (250 - y0)*(250 - y0));
+	double dis_me_za1 = sqrt((1066 - x0)*(1066 - x0) + (430 - y0)*(430 - y0));
+	if (dis_me_za0 < 200)
+	{
+		double theta1 = atan2(250 - y0, 300 - x0)*180.0 / PI;
+		double dt = theta1 + 90;
+		walkrotation(order, dt, info, myID);
+	}
+	else if (dis_me_za1 < 200)
+	{
+		double theta1 = atan2(1066 - y0, 430 - x0)*180.0 / PI;
+		double dt = theta1 + 90;
+		walkrotation(order, dt, info, myID);
+	}
+}
+void daweisuo(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	double x1 = info.robotInformation[1 - myID].circle.x;
+	double y1 = info.robotInformation[1 - myID].circle.y;
+	double distance = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0));
+	double dis_me_za0 = sqrt((300 - x0)*(300 - x0) + (250 - y0)*(250 - y0));
+	double dis_me_za1 = sqrt((1066 - x0)*(1066 - x0) + (430 - y0)*(430 - y0));
+	double dx1 = x1 - x0;
+	double dy1 = y1 - y0;
+	double theta1 = atan2(dy1, dx1)*180.0 / PI;
+	if (distance > 10)
+	{
+		if (dis_me_za0 < 200)
+		{
+			double dt = theta1 + 35;
+			walkrotation(order, dt, info, myID);
+		}
+		else if (dis_me_za1 < 200)
+		{
+			double dt = theta1 + 35;
+			walkrotation(order, dt, info, myID);
+		}
+		else
+		if (dis_me_za0 > 75 || dis_me_za1 > 75)
+		{
+			double dt = theta1;
+			walkrotation(order, dt, info, myID);
+		}
+	}
+	else
+	{
+		double dt = theta1;
+		walkrotation(order, dt, info, myID);
+	}
+	duozidan(order, info, myID);
+}
+void dadianju(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	double x1 = info.robotInformation[1 - myID].circle.x;
+	double y1 = info.robotInformation[1 - myID].circle.y;
+	double distance = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0));
+	if (distance > 600)
+	{
+		walkpoint(order, x1, y1, info, myID);
+	}
+	else if (distance < 600)
+	{
+		walkrotation(order, info.robotInformation[1 - myID].engineRotation, info, myID);
+	}
+	raojiaoluo(order, info, myID);
+	duozhangai(order, info, myID);
+}
+
+void dajiqiang(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	double x1 = info.robotInformation[1 - myID].circle.x;
+	double y1 = info.robotInformation[1 - myID].circle.y;
+	double distance = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0));
+	raojiaoluo(order, info, myID);
+	duozhangai(order, info, myID);
+	if (myID == 1)
+	{
+		if (info.arsenal[1].respawning_time == 0)
+		{
+			walkpoint(order, 1316, 50, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (info.arsenal[0].respawning_time == 0)
+		{
+			walkpoint(order, 50, 630, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (distance < 700)
+		{
+			if (info.robotInformation[1 - myID].remainingAmmo * 7 < info.robotInformation[myID].hp)
+			{
+				daweisuo(order, info, myID);
+			}
+			else
+			if (y0 > 340)
+			{
+				if (info.robotInformation[myID].vy > 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta + 90;
+					walkrotation(order, rr, info, myID);
+				}
+				else if (info.robotInformation[myID].vy < 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta - 90;
+					walkrotation(order, rr, info, myID);
+				}
+
+			}
+			else if (y0 < 340)
+			{
+				double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+				double rr = theta + 90;
+				walkrotation(order, rr, info, myID);
+			}
+
+		}
+	}
+	else if (myID == 0)
+	{
+		if (info.arsenal[0].respawning_time == 0)
+		{
+			walkpoint(order, 50, 630, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (info.arsenal[1].respawning_time == 0)
+		{
+			walkpoint(order, 1316, 50, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (distance < 700)
+		{
+			if (info.robotInformation[1 - myID].remainingAmmo * 7 < info.robotInformation[myID].hp)
+			{
+				daweisuo(order, info, myID);
+			}
+			else
+			if (y0 > 340)
+			{
+				if (info.robotInformation[myID].vy > 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta + 90;
+					walkrotation(order, rr, info, myID);
+				}
+				else if (info.robotInformation[myID].vy < 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta - 90;
+					walkrotation(order, rr, info, myID);
+				}
+
+			}
+			else if (y0 < 340)
+			{
+				double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+				double rr = theta + 90;
+				walkrotation(order, rr, info, myID);
+			}
+
+		}
+	}
+}
+void dajianong(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+{
+	double x0 = info.robotInformation[myID].circle.x;
+	double y0 = info.robotInformation[myID].circle.y;
+	double x1 = info.robotInformation[1 - myID].circle.x;
+	double y1 = info.robotInformation[1 - myID].circle.y;
+	double distance = sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0));
+	raojiaoluo(order, info, myID);
+	duozhangai(order, info, myID);
+	if (myID == 1)
+	{
+		if (info.arsenal[1].respawning_time == 0)
+		{
+			walkpoint(order, 1316, 50, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (info.arsenal[0].respawning_time == 0)
+		{
+			walkpoint(order, 50, 630, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (distance < 700)
+		{
+			if (info.robotInformation[1 - myID].remainingAmmo * 25 < info.robotInformation[myID].hp)
+			{
+				daweisuo(order, info, myID);
+			}
+			else
+			if (y0 > 340)
+			{
+				if (info.robotInformation[myID].vy > 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta + 90;
+					walkrotation(order, rr, info, myID);
+				}
+				else if (info.robotInformation[myID].vy < 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta - 90;
+					walkrotation(order, rr, info, myID);
+				}
+
+			}
+			else if (y0 < 340)
+			{
+				double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+				double rr = theta + 90;
+				walkrotation(order, rr, info, myID);
+			}
+
+		}
+	}
+	else if (myID == 0)
+	{
+		if (info.arsenal[0].respawning_time == 0)
+		{
+			walkpoint(order, 50, 630, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (info.arsenal[1].respawning_time == 0)
+		{
+			walkpoint(order, 1316, 50, info, myID);
+			if (distance < 600)
+			{
+				if (y0 > 340)
+				{
+					if (info.robotInformation[myID].vy > 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta + 90;
+						walkrotation(order, rr, info, myID);
+					}
+					else if (info.robotInformation[myID].vy < 0)
+					{
+						double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+						double rr = theta - 90;
+						walkrotation(order, rr, info, myID);
+					}
+
+				}
+			}
+		}
+		else
+		if (distance < 700)
+		{
+			if (info.robotInformation[1 - myID].remainingAmmo * 25 < info.robotInformation[myID].hp)
+			{
+				daweisuo(order, info, myID);
+			}
+			else
+			if (y0 > 340)
+			{
+				if (info.robotInformation[myID].vy > 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta + 90;
+					walkrotation(order, rr, info, myID);
+				}
+				else if (info.robotInformation[myID].vy < 0)
+				{
+					double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+					double rr = theta - 90;
+					walkrotation(order, rr, info, myID);
+				}
+
+			}
+			else if (y0 < 340)
+			{
+				double theta = atan2(y1 - y0, x1 - x0)*180.0 / PI;
+				double rr = theta + 90;
+				walkrotation(order, rr, info, myID);
+			}
+
+		}
+	}
+}

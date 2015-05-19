@@ -105,13 +105,13 @@ aa turnfire(Circle B, double rf, Circle o ,int state, Circle v )
 			//cout << rm << '\n';
 		//	cout << af << '\n';
 			af = AnglePlus(rf, -rm);
-			if (af>3)wturn = -1;
-			if (af < -3)wturn = 1;
+			if (af > 2)wturn = -1;
+			if (af < -2)wturn = 1;
 			Point p;
 			B.r = tan(rf / 180.0 * PI);
+			double k = v.y / v.x;
 			if (v.x != 0)
 			{
-				double k = v.y / v.x;
 				p.x = (o.y - k*o.x + B.r*B.x - B.y) / (B.r - k);
 				p.y = (B.r*o.y - k*B.y + B.r*k*(B.x - o.x)) / (B.r - k);
 			}
@@ -130,9 +130,11 @@ aa turnfire(Circle B, double rf, Circle o ,int state, Circle v )
 				{
 					p1.x = o.x + t1*v.x;
 					p1.y = o.y + t1*v.y;
-					if (howfar(p1.x, p1.y, p.x, p.y) < 1.05*o.r)fire = 1;
+					if (howfar(p1.x, p1.y, p.x, p.y) < 1.5*o.r)fire = 1;
 				}
 			}
+			if (abs(B.r - k) < 0.1 &&  abs(tan(getAngle(B,o)*PI/180.0)-k)<0.1) fire = 1;
+			if (abs(B.x - o.x) < 10) fire = 1;
 		}
 	}
 	else
@@ -234,7 +236,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
 
-	double radfire = info.robotInformation[myID].weaponRotation;
+	double rf = info.robotInformation[myID].weaponRotation;
 	Circle m = info.robotInformation[myID].circle;
 	Circle o = info.robotInformation[1 - myID].circle;
 	o.r = o.r - 1;
@@ -242,9 +244,15 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	v.x = info.robotInformation[1 - myID].vx;
 	v.y = info.robotInformation[1 - myID].vy;
 	v.r = info.robotInformation[1 - myID].vr;
+	double l,re;
+	l = howfar(0, 0, v.x, v.y);
+	re = AngleToRadian(info.robotInformation[1 - myID].engineRotation + v.r);
+	v.x = l*cos(re);
+	v.y = l*sin(re);
 	//cout << v.x << '\n';
 	//system("pause");
-	controlfire(m, o, radfire, order.fire, order.wturn,v);
+	controlfire(m, o, rf, order.fire, order.wturn,v);
+
 	RobotAI_BulletInformation a[200];
 	for (int i = 0; i < info.num_bullet; ++i)
 		a[i] = info.bulletInformation[i];
@@ -255,24 +263,118 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	ro = AnglePlus(info.robotInformation[myID].engineRotation, -ro);
 	if (info.robotInformation[1 - myID].weaponTypeName != WT_ElectricSaw)
 	{
-		if (ro>0) order.eturn = -1;
-		if (ro < 0) order.eturn = 1;
-	}
-	else
-	{
-		if (howfar(m.x, m.y, o.x, o.y) > 500)
+		if (info.robotInformation[1 - myID].weaponTypeName == WT_Tesla ||
+			info.robotInformation[1 - myID].weaponTypeName == WT_RPG ||
+			info.robotInformation[1 - myID].weaponTypeName == WT_Prism ||
+			info.robotInformation[1 - myID].weaponTypeName == WT_MissileLauncher ||
+			info.robotInformation[1 - myID].weaponTypeName == WT_Apollo
+			)
 		{
 			if (ro>0) order.eturn = -1;
 			if (ro < 0) order.eturn = 1;
 		}
 		else
 		{
+			if (howfar(m.x, m.y, o.x, o.y) > 600)
+			{
+				if (ro > 0) order.eturn = -1;
+				if (ro < 0) order.eturn = 1;
+
+			}
+			else
+			{
+				if (ro > 0) order.eturn = 1;
+				if (ro < 0) order.eturn = -1;
+			}
+			if (info.robotInformation[myID].remainingAmmo <= 5)
+			{
+				double ro1;
+				ro1 = getAngle(m, info.arsenal[myID].circle);
+				ro1 = AnglePlus(info.robotInformation[myID].engineRotation, -ro1);
+				if (ro1 > 1)order.eturn = -1;
+				if (ro1 < -1)order.eturn = 1;
+
+			}
+			double a1 = 10000;
+			int a2 = 10;
+			for (int i = 0; i < 200; ++i)
+			{
+				if (a[i].launcherID == 1 - myID&&howfar(o.x, o.y, m.x, m.y) > howfar(o.x, o.y, a[i].circle.x, a[i].circle.y))
+				{
+					Circle B = a[i].circle;
+					B.r = a[i].vy / a[i].vx;
+					v.x = info.robotInformation[myID].vx;
+					v.y = info.robotInformation[myID].vy;
+					v.r = info.robotInformation[myID].vr;
+					Point p;
+					if (v.x != 0)
+					{
+						double k = v.y / v.x;
+						p.x = (o.y - k*o.x + B.r*B.x - B.y) / (B.r - k);
+						p.y = (B.r*o.y - k*B.y + B.r*k*(B.x - o.x)) / (B.r - k);
+					}
+					if (v.x == 0)
+					{
+						p.x = o.x;
+						p.y = B.r*(o.x - B.x) + B.y;
+					}
+					if (p.x > 0 && p.x < 1366 && p.y>0 && p.y < 680)
+					{
+						double t1, t2 = 0;
+						t1 = (p.x - B.x) / (11 * cos(rf*PI / 180));
+						if (t1 < 1 && t1>0){ t1 = (p.y - B.y) / (11 * sin(rf*PI / 180)); }
+						Point p1;
+						if (t1 > 0)
+						{
+							p1.x = o.x + t1*v.x;
+							p1.y = o.y + t1*v.y;
+							if (a1 >= howfar(m.x, m.y, a[i].circle.x, a[i].circle.y))
+							{
+								a1 = howfar(m.x, m.y, a[i].circle.x, a[i].circle.y);
+								if (howfar(p1.x, p1.y, p.x, p.y) < 1.5*m.r) order.eturn = 1;
+							}
+						}
+					}
+				}
+			}
+
+		}
+	}
+	else
+	{
+		if (howfar(m.x, m.y, o.x, o.y) > 600)
+		{
+			if (ro>0) order.eturn = -1;
+			if (ro < 0) order.eturn = 1;
+			
+		}
+		else
+		{
 			if (ro>0) order.eturn = 1;
 			if (ro < 0) order.eturn = - 1;
 		}
+		if (m.y < 80)
+		{
+			if (info.robotInformation[myID].engineRotation < -90)
+				order.eturn = -1;
+		}
+		if (m.y > 600)
+		{
+			if (info.robotInformation[myID].engineRotation < 90 && info.robotInformation[myID].engineRotation > 0)
+				order.eturn = -1;
+		}
+		if (info.robotInformation[myID].remainingAmmo <= 5)
+		{
+			double ro1;
+			ro1 = getAngle(m, info.arsenal[myID].circle);
+			ro1 = AnglePlus(info.robotInformation[myID].engineRotation, -ro1);
+			if (ro1>3)order.eturn = -1;
+			if (ro1 < -3)order.eturn = 1;
+
+		}
 		static int tt = 0;
 		tt++;
-		if (tt < 40)order.eturn = 0;
+		if (tt < 45)order.eturn = 0;
 	}
 
 	
@@ -294,7 +396,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
 	weapon = WT_Machinegun;	//啊，我爱
-	engine = ET_AFV;	//啊，我爱
+	engine = ET_GhostTank;	//啊，我爱
 }
 
 
