@@ -310,40 +310,68 @@ void boundry_hit2(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 
 {
 
-
+	double r = 70;
 
 	auto& me = info.robotInformation[myID];
-
-	if (me.circle.y - 5 - me.circle.r == 0)
+	auto& target = info.robotInformation[1-myID];
+	if (me.circle.y - r - me.circle.r <= 0)
 	{
 		if (me.engineRotation >270)
 			order.eturn = 1;
 		else if (me.engineRotation >180 && me.engineRotation<270)
 			order.eturn = -1;
+		else if (me.engineRotation == 270)//等于 情况目前简化
+		{
+			if (me.circle.x <= target.circle.x)
+				order.eturn = -1;
+			else
+				order.eturn = 1;
+		}
 	}
 
-	if (me.circle.y + me.circle.r + 5 == info.boundary.height)
+	if (me.circle.y + me.circle.r + r >= info.boundary.height)
 	{
 		if (me.engineRotation >0 && me.engineRotation<90)
 			order.eturn = -1;
 		else if (me.engineRotation >90 && me.engineRotation <180)
 			order.eturn = 1;
+		else if (me.engineRotation == 90)//等于 情况目前简化
+		{
+			if (me.circle.x <= target.circle.x)
+				order.eturn = 1;
+			else
+				order.eturn = -1;
+		}
 	}
 
-	if (me.circle.x + me.circle.r + 5== info.boundary.width)
+	if (me.circle.x + me.circle.r + r>= info.boundary.width)
 	{
 		if (me.engineRotation >0 && me.engineRotation < 90)
 			order.eturn = 1;
 		else if (me.engineRotation >270)
 			order.eturn = -1;
+		else if (me.engineRotation == 0)//等于 情况目前简化
+		{
+			if (me.circle.y <= target.circle.y)
+				order.eturn = -1;
+			else
+				order.eturn = 1;
+		}
 	}
 
-	if (me.circle.x - me.circle.r - 5 == 0)
+	if (me.circle.x - me.circle.r - r <= 0)
 	{
 		if (me.engineRotation >90 && me.engineRotation < 180)
 			order.eturn = -1;
 		else if (me.engineRotation >180 && me.engineRotation < 270)
 			order.eturn = 1;
+		else if (me.engineRotation == 180)//等于 情况目前简化
+		{
+			if (me.circle.y <= target.circle.y)
+				order.eturn = 1;
+			else
+				order.eturn = -1;
+		}
 	}
 
 }
@@ -360,8 +388,9 @@ void fire_or_not(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 	}
 }
 
-void waste_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
+void waste_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID,int q)
 {
+	/*
 	auto& me = info.robotInformation[myID];
 	auto& target = info.robotInformation[1 - myID];
 	order.run = 1;
@@ -370,13 +399,13 @@ void waste_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 	double dt = atan2(dy, dx)*180.0 / PI - me.engineRotation;
 	AngleAdjust(dt);
 
-	if (dt <= 0 && dt > -90)
-		order.eturn = -1;
-	else if (dt > 0 && dt < 90)
+	if (dt <= 0 && dt >= -180)
 		order.eturn = 1;
-	
-	else 
-		engine_drive(target.circle.x, target.circle.y, order, info, myID);
+	else if (dt > 0 && dt <= 180)
+		order.eturn = -1;
+	*/
+	//else engine_drive(target.circle.x, target.circle.y, order, info, myID);
+
 }
 
 
@@ -397,14 +426,29 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	auto& arsenal = info.arsenal;
 	double dis0_to_arsenal= dis(me.circle.x, me.circle.y, arsenal[0].circle.x, arsenal[0].circle.y);
 	double dis1_to_arsenal = dis(me.circle.x, me.circle.y, arsenal[1].circle.x, arsenal[1].circle.y);
-	int p;
+	int p;//哪个军火库更近
 	if (dis0_to_arsenal < dis1_to_arsenal)
 		p = 0;
 	else
 		p = 1;
 	
+	//距离障碍物距离
+	auto& obstacle = info.obstacle;
+	double dis0_to_obstacle = dis(me.circle.x, me.circle.y, obstacle[0].x, obstacle[0].y);
+	double dis1_to_obstacle = dis(me.circle.x, me.circle.y, obstacle[1].x, obstacle[1].y);
+	int q;//哪个障碍物更近
+	if (dis0_to_obstacle < dis1_to_obstacle)
+		q = 0;
+	else
+		q = 1;
+
+
+
+
 	double flag = 0;//默认状态
 	double firerange = 1.9;//默认开火距离
+	int warn = 0;//默认不waste状态
+
 
 	weapon_rotation(order, info, myID);//任何情况下炮口都得对着敌人
     
@@ -520,7 +564,9 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				else if (target.remainingAmmo - me.hp / 25 >0)
 				{
 					//消耗子弹方案
-					waste_bullet(order, info, myID);
+					engine_drive(obstacle[q].x, obstacle[q].y, order, info, myID);
+					//waste_bullet(order, info, myID,q);
+					//warn = 1;
 				}
 				else
 				engine_drive(target.circle.x, target.circle.y, order, info, myID);
@@ -530,7 +576,10 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				if (target.remainingAmmo - me.hp / 25 > 0)
 				{
 					//消耗子弹方案
-					waste_bullet(order, info, myID);
+					
+					engine_drive(obstacle[q].x, obstacle[q].y, order, info, myID);
+					//waste_bullet(order, info, myID,q);
+					//warn = 1;
 				}
 				else
 					engine_drive(target.circle.x, target.circle.y, order, info, myID);
@@ -572,11 +621,12 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	
 
 	if (flag == 1 && ((me.circle.x <= 60 && me.circle.y >= 610) || (me.circle.x >= 1290 && me.circle.y <= 60)))
-		boundry_hit2(order, info, myID);
+		boundry_hit(order, info, myID,5);
 	else
 	   boundry_hit(order, info, myID,70);
 
-	//boundry_hit(order, info, myID, 10);
+	if (warn==1)
+		boundry_hit2(order, info, myID);
 	
 	fire_or_not(order, info, myID, firerange);
 	

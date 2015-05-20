@@ -9,8 +9,8 @@ struct aa
 double howfar(double x, double y, double x1, double y1);
 double tAngle(double angle1, double angle2);
 double getAngle(Circle a, Circle b);
-aa turnfire(Circle B, double rf, Circle o, int state);
-void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn);
+aa turnfire(Circle B, double rf, Circle o, int state, Circle v);
+void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn, Circle v);
 
 
 
