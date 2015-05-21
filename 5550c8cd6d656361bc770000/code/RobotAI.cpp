@@ -1,5 +1,6 @@
 ﻿#include "RobotAI.h"
 #include <iostream>
+#include <fstream>
 #include <queue>
 using namespace std;
 RobotAI::RobotAI()
@@ -17,7 +18,7 @@ RobotAI::~RobotAI()
 //-----------------------------------------------------
 //1.必须完成的战斗核心
 //-----------------------------------------------------
-
+ofstream fout("h:\\test.txt");
 
 void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID)
 {
@@ -57,22 +58,19 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	}
 	if(armor.remainingAmmo <= 0)
 		order.eturn = Rotate(engine_angle, me.engineRotation);
-	if(dist_me_armor <= 200)
-		order.eturn = Rotate(engine_angle, me.engineRotation);
+	
 	//抢占弹药库！
 	//Circle ars = whichArsenal(info.arsenal[0], info.arsenal[1], me.circle);
 	//if(!(ars.x == 0 && ars.y == 0))
 	//	order.eturn = runAndrun(me,ars);
 
-	//靠墙
-	if(me.circle.x <= 60 || me.circle.y <= 60 || 680 - me.circle.y <= 60 || 1366 - me.circle.x <= 60)
-		order.eturn = avoidWall(me);
+	
 	//等等！有子弹再打我？
 	//Circle bu[200];
 	int bu_num = info.num_bullet;
 	for(int i = 0; i < bu_num; i++){
 		if(info.bulletInformation[i].launcherID == 1 - myID){			
-			if(BulletShotMe(info.bulletInformation[i].circle, me.circle, info.bulletInformation[i].vx, info.bulletInformation[i].vy, armor.weaponTypeName)){
+			if(BulletShotMe(info.bulletInformation[i], me)){
 				//赶紧躲开！
 				if(armor.weaponTypeName == WT_Apollo || armor.weaponTypeName == WT_Cannon)
 					order.eturn = AvoidCannonAFV(info.bulletInformation[i],me);
@@ -82,6 +80,12 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			}
 		}
 	}
+	//靠墙
+	if(me.circle.x <= 60 || me.circle.y <= 60 || 680 - me.circle.y <= 60 || 1366 - me.circle.x <= 60)
+		order.eturn = avoidWall(me);
+	if(dist_me_armor <= 150 && me.hp >= 26)
+		order.eturn = Rotate(engine_angle, me.engineRotation);
+
 	if(armor.weaponTypeName == WT_MissileLauncher || armor.weaponTypeName == WT_ElectricSaw || armor.weaponTypeName == WT_Tesla
 		|| armor.weaponTypeName == WT_Prism)
 	{
@@ -132,17 +136,17 @@ string RobotAI::GetAuthor()
 int RobotAI::GetWeaponRed()
 {
 	//返回一个-255-255之间的整数,代表武器红色的偏移值
-	return -50;
+	return 80;
 }
 int RobotAI::GetWeaponGreen()
 {
 	//返回一个-255-255之间的整数,代表武器绿色的偏移值
-	return -50;
+	return 255;
 }
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return -50;
+	return -136;
 }
 
 //返回一个(-255,255)之间的机甲引擎载具的颜色偏移值（红、绿、蓝）
@@ -150,17 +154,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return -50;
+	return 80;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return -50;
+	return 255;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return -50;
+	return -136;
 }
 
 
@@ -222,20 +226,24 @@ Circle RobotAI::whichArsenal(RobotAI_ArsenalInformation ar1, RobotAI_ArsenalInfo
 	Circle c;
 	return c;
 }
-bool RobotAI::BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype)
+bool RobotAI::BulletShotMe(RobotAI_BulletInformation bu, RobotAI_RobotInformation me)
 {
-	int min_dis = 350;
-	if(weapontype == WT_Apollo || weapontype == WT_RPG || weapontype == WT_Cannon)
-		min_dis = 650;
-	//Distance(bu.x, bu.y, me.x, me.y)
-	//打向我的角度
-	double bulletAngle = atan2(vy,vx) * 180 / PI;
-	//我与子弹的角度
-	double A = vy / vx;
-	double C = bu.y - A * bu.x;
-	double dist = abs(A * me.x - me.y + C) / sqrt(A*A + 1);
-	if(dist <= 50 && Distance(bu.x, bu.y, me.x, me.y) <= min_dis)
-		return true;	
+	double v1 = Distance(bu.vx,bu.vy,0,0), v2 = Distance(me.vx,me.vy,0,0);//v1是子弹速度，v2是我的速度
+	double me_angle = atan2(me.vy, me.vx) * 180 / PI, //我的角度
+		bu_me_angle = atan2(me.circle.y - bu.circle.y, me.circle.x - bu.circle.x) * 180 / PI,//我和子弹的角度
+		bu_angle = atan2(bu.vy, bu.vx) * 180 / PI;//子弹角度
+	double B_angle = abs(bu_angle - bu_me_angle),
+		C_angle = abs(me_angle - bu_me_angle),
+		A_angle = 360 - B_angle - C_angle;
+	AngleAdjust(B_angle);
+	AngleAdjust(C_angle);
+	C_angle = 180 - C_angle;
+	//fout<<me_angle<<"   "<<bu_angle<<"   "<<bu_me_angle<<"----"<<C_angle<<"  "<<B_angle<<"   "<<A_angle<<endl;
+	double a = Distance(me.circle.x, me.circle.y, bu.circle.x, bu.circle.y),
+		b = a * sin(B_angle) / sin(A_angle), c = a * sin(C_angle) / sin(A_angle);
+	double t = c / v1;//t是时间
+	if( b - me.circle.r / sin(A_angle) <= v2 || v2 <= b + me.circle.r / sin(A_angle) )
+		return true;
 	return false;
 }
 int RobotAI::avoidObstacleAFV(RobotAI_RobotInformation me, Circle obstacle)
@@ -274,12 +282,12 @@ Circle RobotAI::whichObstacle(Circle ob1, Circle ob2, Circle me)
 }
 int RobotAI::AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me)
 {
-	double bu_angle = atan2(bu.vy, bu.vx) * 180 / PI;
+	double bu_angle;
 	//double angle = atan2(me.circle.y - bu.circle.y, me.circle.x - bu.circle.x) *180/PI;
 	if(me.circle.x >341 && me.circle.x < 1025)
 	{
 		if(me.circle.y <= 340)
-			bu_angle = 90;
+			bu_angle =  90;
 		else
 			bu_angle = -90;
 	}else{
@@ -288,7 +296,7 @@ int RobotAI::AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformati
 		else
 			bu_angle = 180;
 	}
-	return Rotate(bu_angle, me.engineRotation);	
+	return Rotate(bu_angle, me.engineRotation); 	
 }
 //旋转函数
 int RobotAI::Rotate(double angle_to, double angle_now){

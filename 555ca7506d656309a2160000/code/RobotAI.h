@@ -116,26 +116,11 @@ public:
 
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
-	virtual int runAndrun(RobotAI_RobotInformation me, Circle target);
-	virtual int Rotate(double angle_to, double angle_now);
-	virtual Circle whichArsenal(RobotAI_ArsenalInformation ar1, RobotAI_ArsenalInformation ar2, Circle me);
-	virtual double Distance(double x1, double y1, double x2, double y2);
-	//确定旋转角方向
-	virtual double howToRotate(Circle me, Circle armor, double weapon_rotation, double vx, double vy);
-	//针对战锤坦克，躲避子弹用
-	virtual int AvoidBulletAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
-	//如果有子弹威胁到我
-	virtual bool BulletShotMe(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
-	//遇到障碍物
-	virtual int avoidObstacleAFV(RobotAI_RobotInformation me, Circle obstacle);
-	virtual Circle whichObstacle(Circle ob1, Circle ob2, Circle me);
-	virtual int StrikeObstacle(Circle me, Circle obstacle[],const int num_obs);
-	//得到与敌人距离500的点
-	virtual Circle get500Point(Circle me, Circle armor, double dist);
-	//遇到墙
-	virtual int avoidWall(RobotAI_RobotInformation me);
-	//战锤坦克躲加农炮和阿波罗电磁炮
-	virtual int AvoidCannonAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
+
+
+
+
+
 
 
 };
