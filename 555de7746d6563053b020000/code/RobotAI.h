@@ -11,6 +11,7 @@ protected:
 
 	MyFunction tool;
 	Circle *arsenal;
+	Circle *obstacle;
 public:
 
 	//************************************************

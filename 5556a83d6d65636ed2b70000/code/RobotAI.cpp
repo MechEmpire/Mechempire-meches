@@ -130,11 +130,13 @@ aa turnfire(Circle B, double rf, Circle o ,int state, Circle v )
 				{
 					p1.x = o.x + t1*v.x;
 					p1.y = o.y + t1*v.y;
-					if (howfar(p1.x, p1.y, p.x, p.y) < 1.5*o.r)fire = 1;
+					if (howfar(p1.x, p1.y, p.x, p.y) < 0.8*o.r)fire = 1;
+				
 				}
 			}
 			if (abs(B.r - k) < 0.1 &&  abs(tan(getAngle(B,o)*PI/180.0)-k)<0.2) fire = 1;
 			if (abs(B.x - o.x) < 20) fire = 1;
+			
 		}
 	}
 	else
@@ -272,7 +274,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		{
 			if (ro > 3) order.eturn = -1;
 			if (ro < -3) order.eturn = 1;
-			if (info.robotInformation[myID].remainingAmmo <= 10)
+			if (info.robotInformation[myID].remainingAmmo <= 10&&info.arsenal[myID].respawning_time <= 0)
 			{
 				double ro1;
 				ro1 = getAngle(m, info.arsenal[myID].circle);
@@ -318,6 +320,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 					if (ro1 < 0)order.eturn = 1;
 				}	
 			}
+			
 		}
 		else
 		{
@@ -336,7 +339,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			if (m.x>1286)order.eturn = 1;
 			if (m.y<80)order.eturn = 1;
 			if (m.y>600)order.eturn = 1;
-			if (info.robotInformation[myID].remainingAmmo <= 10)
+			if (info.robotInformation[myID].remainingAmmo <= 15 && info.arsenal[myID].respawning_time <= 0)
 			{
 				double ro1;
 				ro1 = getAngle(m, info.arsenal[myID].circle);
@@ -383,7 +386,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 				}
 			}
 			double a1 = 10000;
-			int a2 = 10;
 			for (int i = 0; i < 200; ++i)
 			{
 				if (a[i].launcherID == 1 - myID&&howfar(o.x, o.y, m.x, m.y) > howfar(o.x, o.y, a[i].circle.x, a[i].circle.y))
@@ -426,6 +428,9 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			}
 
 		}
+		static int tt = 0;
+		tt++;
+		if (tt < 45)order.eturn = 0;
 	}
 	else
 	{
@@ -452,7 +457,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		}
 		
 		
-		if (info.robotInformation[myID].remainingAmmo <= 10)
+		if (info.robotInformation[myID].remainingAmmo <= 10 && info.arsenal[myID].respawning_time <= 0)
 		{
 			double ro1;
 			ro1 = getAngle(m, info.arsenal[myID].circle);
@@ -543,7 +548,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "Swer";
+	return "Swer3";
 }
 
 string RobotAI::GetAuthor()

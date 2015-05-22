@@ -235,7 +235,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	//开火判定
 
-	if (distance<=260+armyE.r&&(fabs(chaangle)<=5||fabs(sumangle)<=5))
+	if (distance<=560+armyE.r&&(fabs(chaangle)<=5||fabs(sumangle)<=5))
 	{
 		order.fire=1;
 		
@@ -255,7 +255,8 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_Tesla;	
+	//weapon = WT_Tesla;
+	weapon = WT_Machinegun;
 	engine = ET_Spider;	
 }
 
@@ -277,7 +278,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "魏爷的闪电小蜘蛛";
+	return "魏爷的小蜘蛛";
 }
 
 string RobotAI::GetAuthor()

@@ -30,35 +30,32 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	tool.updateTrack(info.robotInformation[1-myID].circle);
 
-	order.wturn=tool.TargetAt(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
+	order.wturn=tool.TargetAt(info.robotInformation[myID].circle,tool.GetProPoint(info.robotInformation[myID].circle),
 		info.robotInformation[myID].weaponRotation,1.0);
 
 	order.run=1;
 	if(info.robotInformation[myID].remainingAmmo!=0){	
 		if(order.wturn==0){
-			order.fire=1;
+			if(tool.canShoot(info.robotInformation[myID].circle,tool.GetProPoint(info.robotInformation[myID].circle),info.obstacle)){
+				order.fire=1;
+			}else{
+				order.fire=0;
+			}
 		}
-		tool.Log("engine");
 		Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
-			info.obstacle,70);
+			info.obstacle,90);
 		order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 			info.robotInformation[myID].engineRotation,1.0);
-		//if(order.eturn!=0) order.run=0;
-		//else {order.run=1;}
 	}else{
 		if(info.arsenal[0].respawning_time!=0&&info.arsenal[1].respawning_time!=0){
 			Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
-				info.obstacle,70);
+				info.obstacle,90);
 			order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 				info.robotInformation[myID].engineRotation,1.0);
-			if(order.eturn!=0) order.run=1;
-			else {order.run=1;}
 		}else{
 			Circle targetAddr=tool.GetSafeArsenal(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,arsenal);
 			order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 				info.robotInformation[myID].engineRotation,1.0);
-			if(order.eturn!=0) order.run=1;
-			else {order.run=1;}
 		}
 	}
 }
@@ -75,8 +72,8 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_Prism;
-	engine = ET_GhostTank;
+	weapon = WT_RPG;
+	engine = ET_UFO;
 }
 
 
@@ -97,13 +94,13 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "机甲为何要互相伤害";
+	return "木之本樱";
 }
 
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "我的目的不是学分";
+	return "Frostsword";
 }
 
 

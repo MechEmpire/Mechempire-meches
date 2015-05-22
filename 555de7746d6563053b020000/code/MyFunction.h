@@ -25,29 +25,21 @@ public:
 
 	int TargetAt(Circle self,Circle enemy,double rotation,double error){
 	
-		ofs<<"start:"<<endl;
 		
 		double reAngle=GetRelativeAngle(self,enemy);
-		ofs<<"reAngle:"<<reAngle<<" ";
-		ofs<<"Angle:"<<reAngle/PI*180<<endl;
 
 		double rRotation=(double)rotation/180*PI;
-		ofs<<"rotation:"<<rRotation<<" ";
-		ofs<<"rotation:"<<rRotation/PI*180<<endl;
 
 		reAngle<0?reAngle+=(2*PI):reAngle;
 		rRotation<0?rRotation+=(2*PI):rRotation;
 		double minus=rRotation-reAngle;
-		ofs<<"minus1:"<<minus<<endl;
 		if(minus>PI){
 			minus-=2*PI;
 		}else if(minus<-PI){
 			minus+=2*PI;
 		}
-		ofs<<"minus2:"<<minus<<endl;
 
 		double rError=error/180*PI;
-		ofs<<"rError:"<<rError<<endl<<endl;
 
 		if(minus>rError){
 			return -1;
@@ -70,7 +62,7 @@ public:
 		}else if(dx<0&&dy>=0){
 			angle=PI-angle;
 		}else if(dx<0&&dy<0){
-			angle=PI+angle;
+			angle=angle-PI;
 		}
 		return angle;
 	}
@@ -80,14 +72,23 @@ public:
 		EnemyTrack.push_back(enemy);
 	}
 
-	Circle GetProPoint(){
-		double dx=EnemyTrack.front().x-EnemyTrack.back().x;
-		double dy=EnemyTrack.front().y-EnemyTrack.back().y;
+	Circle GetProPoint(Circle self){
+		double dx=EnemyTrack.back().x-EnemyTrack.front().x;
+		double dy=EnemyTrack.back().y-EnemyTrack.front().y;
 		Circle target;
-		int frame=0;
-// 		for(;;){
-// 			
-// 		}
+		target.x=EnemyTrack.back().x;
+		target.y=EnemyTrack.back().y;
+		double bulletDis=0.0;
+		double bulletV=8.0;
+ 		for(;;){
+ 			target.x+=dx;
+			target.y+=dy;
+			bulletDis+=bulletV;
+			bulletV*=1.05;
+			double dis=sqrt((self.x-target.x)*(self.x-target.x)+(self.y-target.y)*(self.y-target.y));
+			if(dis>bulletDis)continue;
+			else break;
+ 		}
 		return target;
 	}
 
@@ -97,14 +98,123 @@ public:
 
 		double dx=enemy.x-obTarget.x;
 		double dy=enemy.y-obTarget.y;
+		ofs<<"dx:"<<dx<<endl;
+		ofs<<"dy:"<<dy<<endl;
 		double reAngle=abs(GetRelativeAngle(obTarget,enemy));
-		double adsX=ads*cos(reAngle);
-		double adsY=ads*sin(reAngle);
+		ofs<<"angle:"<<reAngle<<endl;
+		reAngle>(PI/2)?reAngle=PI-reAngle:reAngle;
+		double adsX=(ads+obstacle[0].r)*cos(reAngle);
+		double adsY=(ads+obstacle[0].r)*sin(reAngle);
+		ofs<<"ads.x:"<<adsX<<endl;
+		ofs<<"ads.y:"<<adsY<<endl;
 		Circle target;
-		dx>0?target.x=obTarget.x-obTarget.r-adsX:target.x=obTarget.x+obTarget.r+adsX;
-		dy>0?target.y=obTarget.y-obTarget.r-adsY:target.y=obTarget.y+obTarget.r+adsY;
+		dx>0?target.x=obTarget.x-adsX:target.x=obTarget.x+adsX;
+		dy>0?target.y=obTarget.y-adsY:target.y=obTarget.y+adsY;
+		ofs<<"enemy.x:"<<enemy.x<<endl;
+		ofs<<"enemy.y:"<<enemy.y<<endl;
+		ofs<<"target.x:"<<target.x<<endl;
+		ofs<<"target.y:"<<target.y<<endl<<endl;
 
 		return target;
+	}
+
+	bool canShoot(Circle self,Circle enemy,const Circle obstacle[]){
+		double dx=self.x-enemy.x;
+		double dy=self.y-enemy.y;
+		double A;
+		double B;
+		double C;
+		bool res=false;
+		if(dx==0){
+			B=0;
+			A=1;
+			C=-self.x;
+			double LToS0=abs(obstacle[0].x+C);
+			double LToS1=abs(obstacle[1].x+C);
+			if(LToS0>obstacle[0].r&&LToS1>obstacle[1].r){
+				return true;
+			}else{
+				double top=self.y>enemy.y?self.y:enemy.y;
+				double bottom=self.y<enemy.y?self.y:enemy.y;
+				if(LToS0>obstacle[0].r&&LToS1<=obstacle[1].r){
+					if(obstacle[1].y>=bottom&&obstacle[1].y<=top){
+						return false;
+					}else return true;
+				}else if(LToS0<=obstacle[0].r&&LToS1>obstacle[1].r){
+					if(obstacle[0].y>=bottom&&obstacle[0].y<=top){
+						return false;
+					}else return true;
+				}else{
+					if(obstacle[1].y>=bottom&&obstacle[1].y<=top){
+						return false;
+					}else if(obstacle[0].y>=bottom&&obstacle[0].y<=top){
+						return false;
+					}else return true;
+				}
+			}
+		}if(dy==0){
+			A=0;
+			B=1;
+			C=-self.y;
+			double LToS0=abs(obstacle[0].y+C);
+			double LToS1=abs(obstacle[1].y+C);
+			if(LToS0>obstacle[0].r&&LToS1>obstacle[1].r){
+				return true;
+			}else{
+				double right=self.x>enemy.x?self.x:enemy.x;
+				double left=self.x<enemy.x?self.x:enemy.x;
+				if(LToS0>obstacle[0].r&&LToS1<=obstacle[1].r){
+					if(obstacle[1].x>=left&&obstacle[1].x<=right){
+						return false;
+					}else return true;
+				}else if(LToS0<=obstacle[0].r&&LToS1>obstacle[1].r){
+					if(obstacle[0].x>=left&&obstacle[0].x<=right){
+						return false;
+					}else return true;
+				}else{
+					if(obstacle[1].x>=left&&obstacle[1].x<=right){
+						return false;
+					}else if(obstacle[0].x>=left&&obstacle[0].x<=right){
+						return false;
+					}else return true;
+				}
+			}
+		}else{
+			B=1.0;
+			A=-dy/dx;
+			C=-(A*self.x+B*self.y);
+			double LToS0=abs(A*obstacle[0].x+B*obstacle[0].y+C)/sqrt(A*A+B*B);
+			double LToS1=abs(A*obstacle[1].x+B*obstacle[1].y+C)/sqrt(A*A+B*B);
+
+			if(LToS0>obstacle[0].r&&LToS1>obstacle[1].r){
+				return true;
+			}else{
+				double LC0=A*obstacle[0].y-B*obstacle[0].x;
+				double vx0=-(A*C+B*LC0)/(A*A+B*B);
+
+				double LC1=A*obstacle[1].y-B*obstacle[1].x;
+				double vx1=-(A*C+B*LC1)/(A*A+B*B);
+
+				double right=self.x>enemy.x?self.x:enemy.x;
+				double left=self.x<enemy.x?self.x:enemy.x;
+
+				if(LToS0>obstacle[0].r&&LToS1<=obstacle[1].r){
+					if(vx1>=left&&vx1<=right){
+						return false;
+					}else return true;
+				}else if(LToS0<=obstacle[0].r&&LToS1>obstacle[1].r){
+					if(vx0>=left&&vx0<=right){
+						return false;
+					}else return true;
+				}else if(LToS0<=obstacle[0].r&&LToS1<=obstacle[1].r){
+					if(vx1>=left&&vx1<=right){
+						return false;
+					}if(vx0>=left&&vx0<=right){
+						return false;
+					}else return true;
+				}
+			}
+		}
 	}
 
 	Circle GetNearestCircle(Circle self,const Circle circle[]){

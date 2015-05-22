@@ -124,7 +124,7 @@ public:
 	virtual int AvoidCannonAFV(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
 
 	//如果有子弹威胁到我
-	virtual bool BulletShotMe(Circle bu, Circle me, double vx, double vy, weapontypename weapontype);
+	virtual bool BulletShotMe(RobotAI_BulletInformation bu, RobotAI_RobotInformation me);
 
 	//选择一个可以去的军火库
 	virtual Circle whichArsenal(RobotAI_ArsenalInformation ar1, RobotAI_ArsenalInformation ar2, Circle me);
