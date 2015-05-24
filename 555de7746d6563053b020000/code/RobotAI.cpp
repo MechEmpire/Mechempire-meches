@@ -30,32 +30,65 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	tool.updateTrack(info.robotInformation[1-myID].circle);
 
-	order.wturn=tool.TargetAt(info.robotInformation[myID].circle,tool.GetProPoint(info.robotInformation[myID].circle),
-		info.robotInformation[myID].weaponRotation,1.0);
-
-	order.run=1;
-	if(info.robotInformation[myID].remainingAmmo!=0){	
-		if(order.wturn==0){
-			if(tool.canShoot(info.robotInformation[myID].circle,tool.GetProPoint(info.robotInformation[myID].circle),info.obstacle)){
-				order.fire=1;
+	if(info.robotInformation[myID].weaponTypeName==WT_RPG){
+		order.wturn=tool.TargetAt(info.robotInformation[myID].circle,tool.GetProPointRPG(info.robotInformation[myID].circle),
+			info.robotInformation[myID].weaponRotation,1.0);
+	
+		order.run=1;
+		if(info.robotInformation[myID].remainingAmmo!=0){	
+			if(order.wturn==0){
+				if(tool.canShoot(info.robotInformation[myID].circle,tool.GetProPointRPG(info.robotInformation[myID].circle),info.obstacle)){
+					order.fire=1;
+				}else{
+					order.fire=0;
+				}
+			}
+			Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
+				info.obstacle,150);
+			order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
+				info.robotInformation[myID].engineRotation,1.0);
+		}else{
+			int arsenalId=tool.GetSafeArsenal(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
+				info.arsenal,200.0);
+			if(arsenalId==-1){
+				Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
+					info.obstacle,90);
+				order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
+					info.robotInformation[myID].engineRotation,1.0);
 			}else{
-				order.fire=0;
+				order.eturn=tool.TargetAt(info.robotInformation[myID].circle,arsenal[arsenalId],
+					info.robotInformation[myID].engineRotation,1.0);
 			}
 		}
-		Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
-			info.obstacle,90);
-		order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
-			info.robotInformation[myID].engineRotation,1.0);
-	}else{
-		if(info.arsenal[0].respawning_time!=0&&info.arsenal[1].respawning_time!=0){
+	}else if(info.robotInformation[myID].weaponTypeName==WT_GrenadeThrower){
+		order.wturn=tool.TargetAt(info.robotInformation[myID].circle,tool.GetProPointCannon(info.robotInformation[myID].circle),
+			info.robotInformation[myID].weaponRotation,1.0);
+
+		order.run=1;
+		if(info.robotInformation[myID].remainingAmmo!=0){	
+			if(order.wturn==0){
+				if(tool.canShoot(info.robotInformation[myID].circle,tool.GetProPointRPG(info.robotInformation[myID].circle),info.obstacle)){
+					order.fire=1;
+				}else{
+					order.fire=0;
+				}
+			}
 			Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
 				info.obstacle,90);
 			order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 				info.robotInformation[myID].engineRotation,1.0);
 		}else{
-			Circle targetAddr=tool.GetSafeArsenal(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,arsenal);
-			order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
-				info.robotInformation[myID].engineRotation,1.0);
+			int arsenalId=tool.GetSafeArsenal(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
+				info.arsenal,200.0);
+			if(arsenalId==-1){
+				Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
+					info.obstacle,90);
+				order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
+					info.robotInformation[myID].engineRotation,1.0);
+			}else{
+				order.eturn=tool.TargetAt(info.robotInformation[myID].circle,arsenal[arsenalId],
+					info.robotInformation[myID].engineRotation,1.0);
+			}
 		}
 	}
 }
@@ -71,9 +104,18 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//tip:	括号里的参数是枚举类型 weapontypename 或 enginetypename
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
-
-	weapon = WT_RPG;
-	engine = ET_UFO;
+	srand(time(0));
+	int i=rand()%2;
+	switch(i){
+	case 0:
+		weapon = WT_RPG;
+		engine = ET_AFV;
+		break;
+	case 1:
+		weapon = WT_RPG;
+		engine = ET_AFV;
+	}
+	//engine = ET_AFV;
 }
 
 
@@ -162,6 +204,7 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 	//一场战斗开始时被调用，可能可以用来初始化
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
+	
 	arsenal=new Circle[2];
 	arsenal[0]=info.arsenal[0].circle;
 	arsenal[1]=info.arsenal[1].circle;

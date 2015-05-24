@@ -32,6 +32,7 @@ bool HitTestCircles_fake(const Circle &c1, const Circle &c2, double p,double q)
 
 	return (rr*rr >= dis2);
 }
+//p为c1倍增系数，q为c2倍增系数
 bool HitTestBeamCircle_fake(const Beam &b, const Circle &c,double r)
 {
 
@@ -182,8 +183,8 @@ void escape_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& i
 			{
 				//order.fire = 1;
 				//判断子弹是否能击中自己得重写
-				Beam bullet{ target.circle.x, target.circle.y, target.rotation };
-				Beam me_engine{ me.circle.x, me.circle.y, me.engineRotation };
+				//Beam bullet{ target.circle.x, target.circle.y, target.rotation };
+				//Beam me_engine{ me.circle.x, me.circle.y, me.engineRotation };
 				if (r_expansion)//HitTestBeamCircle_fake(bullet, me.circle,target.circle.r))
 				{
 					//order.fire = 1;
@@ -309,12 +310,16 @@ void boundry_hit(RobotAI_Order& order, const RobotAI_BattlefieldInformation& inf
 
 }
 
-void fire_or_not(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID,double firerange)
+void fire_or_not(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID,double firerange,int q)
 {
 	auto& me = info.robotInformation[myID];
 	auto& target = info.robotInformation[1 - myID];
 	
-	if (bool obstacle_judge = HitTestCircles_fake(info.robotInformation[myID].circle, info.robotInformation[1 - myID].circle, firerange, 1))
+
+	Beam my_bullet{ me.circle.x, me.circle.y, me.weaponRotation };
+	
+
+	if ((!HitTestBeamCircle(my_bullet, info.obstacle[q]))&&HitTestCircles_fake(info.robotInformation[myID].circle, info.robotInformation[1 - myID].circle, firerange, 1))
 	{
 		order.fire = 1;
 	}
@@ -340,6 +345,22 @@ void waste_bullet(RobotAI_Order& order, const RobotAI_BattlefieldInformation& in
 
 }
 
+
+
+
+Point solve_equation(Circle obstacle,Circle target)
+{
+	Point destination;
+	double k = (obstacle.y - target.y) / (obstacle.x - target.x);
+	double x1 = 80 / sqrt(k*k + 1) + obstacle.x;
+	double x2 = -80 / sqrt(k*k + 1) + obstacle.x;
+	if (target.x > obstacle.x)
+		destination.x = x2;
+	else
+		destination.x = x1;
+	destination.y = k*(destination.x - obstacle.x + obstacle.y);
+	return destination;
+}
 
 
 void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID)
@@ -377,8 +398,8 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 
 
 
-	double flag = 0;//默认状态
-	double firerange = 10;//默认开火距离
+	double flag = 0;//默认弹药状态
+	double firerange = 12;//默认开火距离
 	int warn = 0;//默认不waste状态
 
 
@@ -389,7 +410,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	{
 		
 		//3.0版本
-		if (dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) > 300)
+		if (dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) > 600)
 		{
 			if (info.arsenal[p].respawning_time == 0 )
 			{
@@ -417,25 +438,37 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				else if (target.remainingAmmo - me.hp / 25 >0)
 				{
 					//消耗子弹方案
-					engine_drive(obstacle[q].x, obstacle[q].y, order, info, myID);
+					
+						Point destination = solve_equation(obstacle[q], target.circle);
+						engine_drive(destination.x, destination.y, order, info, myID);
+					
+
 					//waste_bullet(order, info, myID,q);
 					//warn = 1;
 				}
+				else if (me.remainingAmmo * 7 >= target.hp)//子弹够
+					engine_drive(target.circle.x, target.circle.y, order, info, myID);
 				else
-				engine_drive(target.circle.x, target.circle.y, order, info, myID);
+					engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
 			}
 			else
 			{
-				if (target.remainingAmmo - me.hp / 25 > 0)
+				if (target.remainingAmmo - me.hp / 25 > 0)//血不够
 				{
 					//消耗子弹方案
 					
-					engine_drive(obstacle[q].x, obstacle[q].y, order, info, myID);
+				
+					
+						Point destination = solve_equation(obstacle[q], target.circle);
+						engine_drive(destination.x, destination.y, order, info, myID);
+				
 					//waste_bullet(order, info, myID,q);
 					//warn = 1;
 				}
-				else
+				else if (me.remainingAmmo*7>=target.hp)//子弹够
 					engine_drive(target.circle.x, target.circle.y, order, info, myID);
+				else
+					engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
 			}
 		}
 
@@ -445,9 +478,10 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	else if (target.weaponTypeName == WT_ElectricSaw)
 	{
 		firerange = 12;
-		if (target.hp >= me.hp&&dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) <= 800)
+		if (dis(me.circle.x, me.circle.y, target.circle.x, target.circle.y) <= 600)
 		{
 			order.run = 1;
+
 			double dx = target.circle.x - me.circle.x;
 			double dy = target.circle.y - me.circle.y;
 			double dt = atan2(dy, dx)*180.0 / PI - me.engineRotation;
@@ -456,11 +490,15 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				order.eturn = 1;
 			else if (dt > 0 && dt <= 90)
 				order.eturn = -1;
-			else
+			else if (me.remainingAmmo * 7 >= target.hp)//子弹够
 				engine_drive(target.circle.x, target.circle.y, order, info, myID);
+			else
+				engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
 		}
-		else
+		else if (me.remainingAmmo * 7 >= target.hp)//子弹够
 			engine_drive(target.circle.x, target.circle.y, order, info, myID);
+		else
+			engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
 	}
 	else //目前是非大炮，电锯  都往上冲
 	{
@@ -476,16 +514,20 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 	if (flag == 1 && ((me.circle.x <= 60 && me.circle.y >= 610) || (me.circle.x >= 1290 && me.circle.y <= 60)))
 	{
 		boundry_hit(order, info, myID, 5);
-		if (me.remainingAmmo>=22)
+		if (me.remainingAmmo>=15)
 		firerange = 25;
 	}
 	else
 	   boundry_hit(order, info, myID,70);
 
-	if (me.remainingAmmo >= 25)
+	if (me.remainingAmmo >= 27)
 		firerange = 20;
 
-	fire_or_not(order, info, myID, firerange);
+	if (me.remainingAmmo <=10)
+		firerange = 8;
+
+
+	fire_or_not(order, info, myID, firerange,q);
 	
 
 }
@@ -502,7 +544,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
 	weapon = WT_Machinegun;	//啊，我爱加农炮
-	engine = ET_GhostTank;	//四轴飞行器
+	engine = ET_AFV;	//四轴飞行器
 	
 }
 

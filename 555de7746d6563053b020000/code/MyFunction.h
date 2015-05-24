@@ -72,7 +72,7 @@ public:
 		EnemyTrack.push_back(enemy);
 	}
 
-	Circle GetProPoint(Circle self){
+	Circle GetProPointRPG(Circle self){
 		double dx=EnemyTrack.back().x-EnemyTrack.front().x;
 		double dy=EnemyTrack.back().y-EnemyTrack.front().y;
 		Circle target;
@@ -89,6 +89,26 @@ public:
 			if(dis>bulletDis)continue;
 			else break;
  		}
+		return target;
+	}
+
+	Circle GetProPointCannon(Circle self){
+		double dx=EnemyTrack.back().x-EnemyTrack.front().x;
+		double dy=EnemyTrack.back().y-EnemyTrack.front().y;
+		Circle target;
+		target.x=EnemyTrack.back().x;
+		target.y=EnemyTrack.back().y;
+		double bulletDis=0.0;
+		double bulletV=11.0;
+		int control=100;
+		for(int i=0;i<control;++i){
+			target.x+=dx;
+			target.y+=dy;
+			bulletDis+=bulletV;
+			double dis=sqrt((self.x-target.x)*(self.x-target.x)+(self.y-target.y)*(self.y-target.y));
+			if(dis>bulletDis)continue;
+			else break;
+		}
 		return target;
 	}
 
@@ -231,19 +251,41 @@ public:
 		}else return circle[0];
 	}
 
-	Circle GetSafeArsenal(Circle self,Circle enemy,Circle arsenal[]){
-		double myDisToAr0=(self.x-arsenal[0].x)*(self.x-arsenal[0].x)+(self.y-arsenal[0].y)*(self.y-arsenal[0].y);
-		double myDisToAr1=(self.x-arsenal[1].x)*(self.x-arsenal[1].x)+(self.y-arsenal[1].y)*(self.y-arsenal[1].y);
-		double EnDisToAr0=(enemy.x-arsenal[0].x)*(enemy.x-arsenal[0].x)+(enemy.y-arsenal[0].y)*(enemy.y-arsenal[0].y);
-		double EnDisToAr1=(enemy.x-arsenal[1].x)*(enemy.x-arsenal[1].x)+(enemy.y-arsenal[1].y)*(enemy.y-arsenal[1].y);
+	int GetSafeArsenal(Circle self,Circle enemy,const RobotAI_ArsenalInformation* arsenal,double controlDis){
+		double myDisToAr0=controlDis+sqrt((self.x-arsenal[0].circle.x)*(self.x-arsenal[0].circle.x)+(self.y-arsenal[0].circle.y)*(self.y-arsenal[0].circle.y));
+		double myDisToAr1=controlDis+sqrt((self.x-arsenal[1].circle.x)*(self.x-arsenal[1].circle.x)+(self.y-arsenal[1].circle.y)*(self.y-arsenal[1].circle.y));
+		double EnDisToAr0=sqrt((enemy.x-arsenal[0].circle.x)*(enemy.x-arsenal[0].circle.x)+(enemy.y-arsenal[0].circle.y)*(enemy.y-arsenal[0].circle.y));
+		double EnDisToAr1=sqrt((enemy.x-arsenal[1].circle.x)*(enemy.x-arsenal[1].circle.x)+(enemy.y-arsenal[1].circle.y)*(enemy.y-arsenal[1].circle.y));
 
 		if(myDisToAr0<=EnDisToAr0&&myDisToAr1<=EnDisToAr1){
-			return myDisToAr0>myDisToAr1?arsenal[1]:arsenal[0];
+			if(arsenal[0].respawning_time==0&&arsenal[1].respawning_time==0){
+				return myDisToAr0>myDisToAr1?1:0;
+			}else if(arsenal[0].respawning_time==0&&arsenal[1].respawning_time!=0){
+				return 0;
+			}else if(arsenal[0].respawning_time!=0&&arsenal[1].respawning_time==0){
+				return 1;
+			}else return -1;
 		}else if(myDisToAr0>EnDisToAr0&&myDisToAr1>EnDisToAr1){
-			return myDisToAr0>myDisToAr1?arsenal[1]:arsenal[0];
+			if(arsenal[0].respawning_time==0&&arsenal[1].respawning_time==0){
+				return myDisToAr0>myDisToAr1?1:0;
+			}else if(arsenal[0].respawning_time==0&&arsenal[1].respawning_time!=0){
+				return 0;
+			}else if(arsenal[0].respawning_time!=0&&arsenal[1].respawning_time==0){
+				return 1;
+			}else return -1;
 		}else if(myDisToAr0<=EnDisToAr0&&myDisToAr1>EnDisToAr1){
-			return arsenal[0];
-		}else return arsenal[1];
+			if(arsenal[0].respawning_time==0){
+				return 0;
+			}else if(arsenal[0].respawning_time!=0){
+				return -1;
+			}	
+		}else if(myDisToAr0>EnDisToAr0&&myDisToAr1<=EnDisToAr1){
+			if(arsenal[1].respawning_time==0){
+				return 1;
+			}else if(arsenal[1].respawning_time!=0){
+				return -1;
+			}
+		}
 	}
 
 	void Log(double s){
