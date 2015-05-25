@@ -428,7 +428,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 		}
 		else
 		{
-			if ((dis(me.circle.x, me.circle.y, arsenal[p].circle.x, arsenal[p].circle.y)<dis(target.circle.x, target.circle.y, arsenal[p].circle.x, arsenal[p].circle.y)) && info.arsenal[1 - p].respawning_time != 0)
+			if ((dis(me.circle.x, me.circle.y, arsenal[p].circle.x, arsenal[p].circle.y)<dis(target.circle.x, target.circle.y, arsenal[p].circle.x, arsenal[p].circle.y)) )
 			{
 				if (info.arsenal[p].respawning_time == 0)
 				{
@@ -449,11 +449,17 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				else if (me.remainingAmmo * 7 >= target.hp)//子弹够
 					engine_drive(target.circle.x, target.circle.y, order, info, myID);
 				else
-					engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
+					engine_drive(arsenal[1-p].circle.x, arsenal[1-p].circle.y, order, info, myID);
 			}
 			else
 			{
-				if (target.remainingAmmo - me.hp / 25 > 0)//血不够
+				if (info.arsenal[p].respawning_time == 0)
+				{
+					Point destination = solve_equation(obstacle[q], target.circle);
+					engine_drive(destination.x, destination.y, order, info, myID);
+
+				}
+				else if (target.remainingAmmo - me.hp / 25 > 0)//血不够
 				{
 					//消耗子弹方案
 					
@@ -468,7 +474,7 @@ void RobotAI::Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation&
 				else if (me.remainingAmmo*7>=target.hp)//子弹够
 					engine_drive(target.circle.x, target.circle.y, order, info, myID);
 				else
-					engine_drive(arsenal[p].circle.x, arsenal[p].circle.y, order, info, myID);
+					engine_drive(arsenal[1-p].circle.x, arsenal[1-p].circle.y, order, info, myID);
 			}
 		}
 

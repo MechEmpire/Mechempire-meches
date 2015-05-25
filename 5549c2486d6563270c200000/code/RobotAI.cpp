@@ -63,7 +63,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//判断距离，不能太近	
 	double min_dist = 500;
 	//打猥琐飞弹和光棱只要贴脸干！其他的要远离，尤其是电锯！
-	if(armor.weaponTypeName == WT_MissileLauncher && armor.weaponTypeName ==WT_Prism && armor.weaponTypeName == WT_PlasmaTorch && armor.weaponTypeName == WT_RPG)
+	if(armor.weaponTypeName == WT_MissileLauncher || armor.weaponTypeName ==WT_Prism || armor.weaponTypeName == WT_PlasmaTorch || armor.weaponTypeName == WT_RPG)
 		min_dist = 150;
 
 	if(distance_me_armor <= min_dist)//太近了就往回走
@@ -77,7 +77,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		if(!(arsenal.x == 0 && arsenal.y == 0))
 			order.eturn = runAndrunAFV(me.circle,arsenal ,me.engineRotation);
 	}
-
+	
 	//等等！有子弹再打我？
 	//Circle bu[200];
 	int bu_num = info.num_bullet;
@@ -91,10 +91,12 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 					order.eturn = AvoidCannonAFV(info.bulletInformation[i], me);
 				else
 					order.eturn = AvoidBulletAFV(info.bulletInformation[i], me);
+				
 				break;//先检测一颗子弹吧
 			}
 		}
 	}
+	
 	//靠墙？
 	if(me.circle.x <= 60 || me.circle.y <= 60 || 680 - me.circle.y <= 60 || 1366 - me.circle.x <= 60)
 		order.eturn = avoidWall(me);
@@ -318,7 +320,7 @@ bool RobotAI::BulletShotMe(RobotAI_BulletInformation bu, RobotAI_RobotInformatio
 	double a = Distance(me.circle.x, me.circle.y, bu.circle.x, bu.circle.y),
 		b = a * sin(B_angle) / sin(A_angle), c = a * sin(C_angle) / sin(A_angle);
 	double t = c / v1;//t是时间
-	if( b - me.circle.r / sin(A_angle) <= v2 || v2 <= b + me.circle.r / sin(A_angle) )
+	if( b - me.circle.r / sin(A_angle) <= v2 * t || v2 * t <= b + me.circle.r / sin(A_angle) )
 		return true;
 	return false;
 }
