@@ -109,8 +109,8 @@ aa turnfire(Circle B, double rf, Circle o ,int state, Circle v )
 			//cout << rm << '\n';
 		//	cout << af << '\n';
 			af = AnglePlus(rf, -rm);
-			if (af > 0.5)wturn = -1;
-			if (af < -0.5)wturn = 1;
+			if (af > 2)wturn = -1;
+			if (af < -2)wturn = 1;
 			Point p;
 			B.r = tan(rf / 180.0 * PI);
 			double k = v.y / v.x;
@@ -153,7 +153,21 @@ aa turnfire(Circle B, double rf, Circle o ,int state, Circle v )
 				{
 					fire = 0;
 				}
-			}	
+			}
+			static int time = 0;
+			static int  qw = 0;
+			if (fire == 1 && time == 0)qw = 1;
+			if (qw == 1)
+			{
+				double rbo = AnglePlus(v.r, -getAngle(B, o));
+				if (rbo >= 0 && time == 1)wturn = -1;
+				if (rbo < 0 && time == 1)wturn = 1;
+				fire = 1;
+				if (time == 6){ time = 0; qw=0;}
+				++time;
+			
+			}
+			
 		}
 	}
 	else
@@ -315,7 +329,10 @@ void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn,Circle v,int
 		if (wturn == 0) wturn = a.y;
 	}
 }
+void controlfire1(Circle m, Circle o, double rf, int&fire, int&wturn)
+{
 
+}
 
 
 
@@ -544,7 +561,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			Circle a1 = {0};
 			for (int i = 0; i < 200; ++i)
 			{
-				if (a[i].launcherID == 1 - myID&&howfar(o.x, o.y, m.x, m.y) > howfar(o.x, o.y, a[i].circle.x, a[i].circle.y)+50)
+				if ((a[i].launcherID == 1 - myID)&&howfar(o.x, o.y, m.x, m.y) > howfar(o.x, o.y, a[i].circle.x, a[i].circle.y)-50)
 				{
 					Circle B = a[i].circle;
 					B.r = a[i].vy / a[i].vx;
@@ -573,7 +590,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 						{
 							p1.x = o.x + t1*v.x;
 							p1.y = o.y + t1*v.y;
-							if (howfar(p1.x, p1.y, p.x, p.y) < 1.6*o.r )
+							if (howfar(p1.x, p1.y, p.x, p.y) < 1.4*o.r )
 							{
 								a1.x = a[i].circle.x;
 								a1.y = a[i].circle.y;
@@ -802,13 +819,13 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "Swer6";
+	return "fda";
 }
 
 string RobotAI::GetAuthor()
 {
 	//返回机甲制作人或团队的名字
-	return "菜刀队";
+	return "as";
 }
 
 
@@ -819,7 +836,7 @@ string RobotAI::GetAuthor()
 int RobotAI::GetWeaponRed()
 {
 	//返回一个-255-255之间的整数,代表武器红色的偏移值
-	return -179;
+	return 0;
 }
 int RobotAI::GetWeaponGreen()
 {
@@ -829,7 +846,7 @@ int RobotAI::GetWeaponGreen()
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return 209;
+	return 200;
 }
 
 
@@ -839,17 +856,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return 32;
+	return 0;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return 231;
+	return 0;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return 220;
+	return 0;
 }
 
 

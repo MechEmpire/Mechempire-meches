@@ -6,8 +6,16 @@
 #include <list>
 using namespace std;
 
+enum strategy
+{
+	AVOID,
+	RUSH,
+
+};
+
 class MyFunction{
 private:
+	int TrackCount;
 	ofstream ofs;
 	list<Circle> EnemyTrack;
 public:
@@ -17,10 +25,17 @@ public:
 		ofs.close();
 	}
 
-	void init(Circle initEnemy){
+	void init(int trackCount,Circle initEnemy){
 		ofs.open("D:/mylog.txt");
-		EnemyTrack.push_back(initEnemy);
-		EnemyTrack.push_back(initEnemy);
+		TrackCount=trackCount;
+
+		for(int i=0;i<TrackCount;++i){
+			EnemyTrack.push_back(initEnemy);
+		}
+	}
+
+	void setTrack(int TrackCount,Circle enemy){
+		
 	}
 
 	int TargetAt(Circle self,Circle enemy,double rotation,double error){
@@ -73,8 +88,8 @@ public:
 	}
 
 	Circle GetProPointRPG(Circle self){
-		double dx=EnemyTrack.back().x-EnemyTrack.front().x;
-		double dy=EnemyTrack.back().y-EnemyTrack.front().y;
+		double dx=(EnemyTrack.back().x-EnemyTrack.front().x)/(TrackCount-1);
+		double dy=(EnemyTrack.back().y-EnemyTrack.front().y)/(TrackCount-1);
 		Circle target;
 		target.x=EnemyTrack.back().x;
 		target.y=EnemyTrack.back().y;
@@ -288,6 +303,75 @@ public:
 		}
 	}
 
+	Circle GetRushAddr(Circle self,Circle enemy,double controlDis){
+		double angle=abs(GetRelativeAngle(self,enemy));
+		angle>(PI/2)?angle=PI-angle:angle;
+		double dx=controlDis*cos(angle);
+		double dy=controlDis*sin(angle);
+
+		Circle target;
+		dx>0?target.x=enemy.x+dx:target.x=enemy.x-dx;
+		dy>0?target.y=enemy.y+dy:target.y=enemy.y-dy;
+		return target;
+	}
+
+	double GetDis(Circle self,Circle enemy){
+		return sqrt((self.x-enemy.x)*(self.x-enemy.x)+(self.y-enemy.y)*(self.y-enemy.y));
+	}
+
+	strategy Strategy(const RobotAI_RobotInformation& self,const RobotAI_RobotInformation& enemy){
+		strategy res;
+		int damage=0;
+
+		if(GetDis(self.circle,enemy.circle)<=400){
+			res=RUSH;
+		}else{
+			switch (enemy.weaponTypeName)
+			{
+			case WT_GrenadeThrower:
+				damage=25;
+				break;
+			case WT_Machinegun:
+				damage=7;
+				break;
+			case WT_MineLayer:
+				damage=45;
+				break;
+			case WT_Prism:
+				damage=20;
+				break;
+			case WT_PlasmaTorch:
+				damage=18;
+				break;
+			case WT_MissileLauncher:
+				damage=15;
+				res=RUSH;
+				break;
+			case WT_RPG:
+				damage=35;
+				break;
+			case WT_Apollo:
+				damage=25;
+				break;
+			case WT_Cannon:
+				damage=25;
+				break;
+			case WT_ElectricSaw:
+				damage=5;
+				res=RUSH;
+				break;
+			case WT_Shotgun:
+				damage=50;
+				break;
+			default:
+				break;
+			}
+			int RemainDamage=damage*enemy.remainingAmmo;
+			RemainDamage>=self.hp?res=AVOID:res=RUSH;
+		}	
+		return res;
+	}
+
 	void Log(double s){
 		ofs<<s<<endl;
 	}
@@ -295,6 +379,12 @@ public:
 	void Log(string s){
 		ofs<<s<<endl;
 	}
+
+	void Log(const RobotAI_BattlefieldInformation& info){
+		ofs<<&info<<endl;
+	}
+
+
 };
 
 #endif

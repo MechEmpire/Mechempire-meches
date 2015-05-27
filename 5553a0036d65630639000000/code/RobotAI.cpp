@@ -248,7 +248,10 @@ if (info.robotInformation[myID].remainingAmmo>0)//有弹药
 	
 	//开火判定
 
-	if (distance<=130+armyE.r&&(fabs(sumangle)<=20||fabs(chaangle)<=20))
+	double effectiveshotRadian=asin(armyE.r/distance);
+	double effectiveshotangle=RadianToAngle(effectiveshotRadian);
+
+	if (distance<=125+armyE.r&&(fabs(sumangle)<=effectiveshotangle||fabs(chaangle)<=effectiveshotangle))
 	{
 		order.fire=1;
 		

@@ -1,17 +1,15 @@
 #pragma once
 
 #include "RobotAI_Interface.h"
-#include "MyFunction.h"
+
+
 
 class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
 
-	MyFunction tool;
-	Circle *arsenal;
-	Circle *obstacle;
-	int randId;
+
 public:
 
 	//************************************************

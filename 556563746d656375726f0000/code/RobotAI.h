@@ -1,17 +1,26 @@
 #pragma once
 
 #include "RobotAI_Interface.h"
-#include "MyFunction.h"
+struct aa
+{
+	int x; 
+	int y;
+};
+double howfar(double x, double y, double x1, double y1);
+double tAngle(double angle1, double angle2);
+double getAngle(Circle a, Circle b);
+aa turnfire(Circle B, double rf, Circle o, int state, Circle v);
+aa turnfire1(Circle B, double rf, Circle o, int state);
+void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn, Circle v, int state);
+void controlfire1(Circle m, Circle o, double rf, int&fire, int&wturn);
+
 
 class RobotAI:public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
 
-	MyFunction tool;
-	Circle *arsenal;
-	Circle *obstacle;
-	int randId;
+
 public:
 
 	//************************************************
@@ -32,7 +41,7 @@ public:
 	//		info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
-	virtual void Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID);
+ virtual void Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID) final ;
 
 
 
@@ -118,11 +127,12 @@ public:
 
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
-
-
+	
 
 
 
 
 
 };
+
+
