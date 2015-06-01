@@ -134,38 +134,66 @@ aa turnfire(Circle B, double rf, Circle o ,int state, Circle v )
 				{
 					p1.x = o.x + t1*v.x;
 					p1.y = o.y + t1*v.y;
-					if (howfar(p1.x, p1.y, p.x, p.y) < 1.1*o.r)fire = 1;
+					if (howfar(p1.x, p1.y, p.x, p.y) < 1.3*o.r)fire = 1;
+					if (p.x > 1100 && p.y < 350 && o.y > 400 && o.x > 1100)fire = 0;
+					if (p.x < 250 && p.y >350  && o.y < 300 && o.x < 250)fire = 0;
 				
 				}
 			}
-			if (abs(B.r - k) < 0.1 &&  abs(tan(getAngle(B,o)*PI/180.0)-k)<0.2) fire = 1;
+			if (abs(B.r - k) < 0.3 &&  abs(tan(getAngle(B,o)*PI/180.0)-k)<0.2) fire = 1;
 			if (abs(B.x - o.x) < 20) fire = 1;
 			if (v.x*v.x + v.y*v.y < 0.4)
 			{
 				if (abs(af) < 2)fire = 1;
 			}
+			if (howfar(B.x, B.y, o.x, o.y) < 300)
+			{
+				double ro5;
+				ro5 = RadianToAngle(asin(o.r / A));
+				double ro6;
+				ro6 = getAngle(B, o);
+				double rf0;
+				rf0 = AnglePlus(rf, -ro6);
+				if (abs(rf0) > 3.5 + ro5)
+				{
+					fire = 0;
+					if (rf0 > 0) wturn = -1;
+					else wturn = 1;
+				}
+				if (abs(rf0) <= 3.5 + ro5 && abs(rf0) >= ro5 - 3.5)
+				{
+					double a7;
+					a7 = (ro5 - abs(rf0) + 3.5) / 7;
+					if (a7> 0.9) fire = 1;
+					else  fire = 0;
+					if (rf0 > 0) wturn = -1;
+					else wturn = 1;
+				}
+				if (abs(rf0) < ro5 - 3.5) fire = 1;
+			}
+			Circle jhk[2] = { 50, 630, 10, 1316, 50, 10 };
+			double jh = getAngle(o, jhk[0]);
+			double jh1 = getAngle(o, jhk[1]);
 			if (howfar(B.x, B.y, o.x, o.y) > 600)
 			{
-				Circle jhk[2] = { 50, 630, 10 ,1316,50,10};
-				double jh = getAngle(o, jhk[0]);
-				double jh1 = getAngle(o, jhk[1]);
-				if (abs(jh - v.r) > 3 && abs(jh1 - v.r) > 3)
+				
+				if (abs(jh - v.r) > 6 && abs(jh1 - v.r) > 6 && howfar(jhk[0].x, jhk[0].y, o.x, o.y)>300 && howfar(jhk[1].x, jhk[1].y, o.x, o.y)>300)
 				{
 					fire = 0;
 				}
 			}
+			if (howfar(jhk[0].x, jhk[0].y, o.x, o.y) < 300 || howfar(jhk[1].x, jhk[1].y, o.x, o.y) < 300)fire = 1;
 			static int time = 0;
 			static int  qw = 0;
 			if (fire == 1 && time == 0)qw = 1;
 			if (qw == 1)
 			{
 				double rbo = AnglePlus(v.r, -getAngle(B, o));
-				if (rbo >= 0 && time == 1)wturn = -1;
-				if (rbo < 0 && time == 1)wturn = 1;
+				if (rbo >= 0 && time <= 3)wturn = -1;
+				if (rbo < 0 && time <= 3)wturn = 1;
 				fire = 1;
 				if (time == 6){ time = 0; qw=0;}
-				++time;
-			
+				++time;		
 			}
 			
 		}
@@ -310,9 +338,13 @@ void controlfire(Circle m, Circle o, double rf, int&fire, int&wturn,Circle v,int
 	if (state == 1)//直线预判
 	{
 		a = turnfire(B, rf, o, 0, v);
+		if (v.x*v.x + v.y + v.y < 2)a.x = 1;
 	}
 	else
+	{
 		a = turnfire1(B, rf, o, 0);
+		if (v.x*v.x + v.y + v.y < 2)a.x = 1;
+	}
 	fire = a.x;
 	wturn = a.y;
 	Circle A[2] = { 300, 250, 76, 1066, 430, 76 };
@@ -379,28 +411,36 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	v.y = l*sin(re);
 	v.r = info.robotInformation[1 - myID].engineRotation;
 	//cout << v.x << '\n';
-	//system("pause");
 	controlfire(m, o, rf, order.fire, order.wturn,v,1);
-
-	RobotAI_BulletInformation a[200];
+	RobotAI_BulletInformation a[200] = {0};
 	for (int i = 0; i < info.num_bullet; ++i)
 		a[i] = info.bulletInformation[i];
-
 	order.run = 1;
 	double ro;
 	ro = getAngle(m, o);
 	ro = AnglePlus(info.robotInformation[myID].engineRotation, -ro);
 	if (info.robotInformation[1 - myID].weaponTypeName != WT_ElectricSaw)
 	{
+		
 		if (info.robotInformation[1 - myID].weaponTypeName == WT_Tesla ||
-			info.robotInformation[1 - myID].weaponTypeName == WT_RPG ||
+			//info.robotInformation[1 - myID].weaponTypeName == WT_RPG ||
 			info.robotInformation[1 - myID].weaponTypeName == WT_Prism ||
 			info.robotInformation[1 - myID].weaponTypeName == WT_MissileLauncher ||
 			info.robotInformation[1 - myID].weaponTypeName == WT_Apollo
 			)
 		{
 			controlfire(m, o, rf, order.fire, order.wturn, v, 0);
-			if (howfar(m.x, m.y, o.x, o.y) > 300)order.fire = 0;
+			if (howfar(m.x, m.y, o.x, o.y) > 400&&v.x*v.x+v.y*v.y>2)order.fire = 0;
+			static int tt1 = 0;
+			tt1++;
+			if (howfar(m.x, m.y, o.x, o.y) > 400 && howfar(m.x, m.y, o.x, o.y) <= 200)
+			{
+				if (tt1 < 70)
+				{
+					order.fire = 0;
+				}
+			}
+			if (order.fire ==1)tt1 = 0;
 			if (howfar(m.x, m.y, o.x, o.y)>200)
 			if (ro > 3) order.eturn = -1;
 			if (ro < -3) order.eturn = 1;
@@ -413,7 +453,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 				if (ro1 < -3)order.eturn = 1;
 
 			}
-			if (howfar(info.obstacle[1 - myID].x, info.obstacle[1 - myID].y, m.x, m.y) < 200)
+			if (howfar(info.obstacle[1 - myID].x, info.obstacle[1 - myID].y, m.x, m.y) < 150)
 			{
 				double ro1;
 			
@@ -425,7 +465,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 				ro1 = AnglePlus(info.robotInformation[myID].engineRotation, -ro1);
 				if (howfar(info.obstacle[1 - myID].x, info.obstacle[1 - myID].y, m.x, m.y)
-			> howfar(info.obstacle[1 - myID].x + info.robotInformation[myID].vx, info.obstacle[1 - myID].y + info.robotInformation[myID].vy, m.x, m.y))
+			>= howfar(info.obstacle[1 - myID].x + info.robotInformation[myID].vx, info.obstacle[1 - myID].y + info.robotInformation[myID].vy, m.x, m.y))
 				{
 					if (ro1 > 2)order.eturn = -1;
 					if (ro1 < 2)order.eturn = 1;
@@ -437,7 +477,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 				}
 			}
 			
-			if (howfar(info.obstacle[myID].x, info.obstacle[myID].y, m.x, m.y) < 200)
+			if (howfar(info.obstacle[myID].x, info.obstacle[myID].y, m.x, m.y) < 150)
 			{
 				
 				double ro1;
@@ -460,10 +500,14 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 					if (ro1 < 2)order.eturn = 1;
 				}
 			}
-			
+			static int tt = 0;
+			tt++;
+			if (tt < 70)order.eturn = 0;
 		}
 		else
 		{
+			if (howfar(m.x, m.y, o.x, o.y) < 200)
+				controlfire(m, o, rf, order.fire, order.wturn, v, 0);
 			if (howfar(m.x, m.y, o.x, o.y) > 600)
 			{
 				if (ro > 3) order.eturn = -1;
@@ -475,28 +519,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 				if (ro > 0) order.eturn = 1;
 				if (ro < 0) order.eturn = -1;
 			}
-			int a12 = myID;
-			if (info.robotInformation[myID].remainingAmmo <= 15 )
-			{
-				if (howfar(info.arsenal[myID].circle.x, info.arsenal[myID].circle.y, m.x, m.y) <= howfar(info.arsenal[1 - myID].circle.x, info.arsenal[1 - myID].circle.y, m.x, m.y))
-					a12 = myID;
-				else
-					a12 = 1 - myID;
-				if (info.arsenal[a12].respawning_time>100)
-					a12 = 1 - a12;
-				if (info.arsenal[a12].respawning_time > 100)
-					a12 = 3;
-				if (a12 == 3){}
-				else
-				{
-					double ro1;
-					ro1 = getAngle(m, info.arsenal[a12].circle);
-					ro1 = AnglePlus(info.robotInformation[a12].engineRotation, -ro1);
-					if (ro1 > 3)order.eturn = -1;
-					if (ro1 < -3)order.eturn = 1;
-				}
-
-			}
+		
 			
 			if (howfar(info.obstacle[1 - myID].x, info.obstacle[1 - myID].y, m.x, m.y) < 150)
 			{
@@ -535,10 +558,32 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 					if (ro1 < 0)order.eturn = 1;
 				}
 			}
+			int a12 = myID;
+			if (info.robotInformation[myID].remainingAmmo <= 15 && info.robotInformation[myID].remainingAmmo  < info.robotInformation[1 - myID].hp)
+			{
+				if (howfar(info.arsenal[myID].circle.x, info.arsenal[myID].circle.y, m.x, m.y) <= howfar(info.arsenal[1 - myID].circle.x, info.arsenal[1 - myID].circle.y, m.x, m.y))
+					a12 = myID;
+				else
+					a12 = 1 - myID;
+				if (info.arsenal[a12].respawning_time>100)
+					a12 = 1 - a12;
+				if (info.arsenal[a12].respawning_time > 100)
+					a12 = 3;
+				if (a12 == 3){}
+				else
+				{
+					double ro1;
+					ro1 = getAngle(m, info.arsenal[a12].circle);
+					ro1 = AnglePlus(info.robotInformation[a12].engineRotation, -ro1);
+					if (ro1 > 3)order.eturn = -1;
+					if (ro1 < -3)order.eturn = 1;
+				}
+
+			}
 			double rem = info.robotInformation[myID].engineRotation;
 			if (m.y < 80)
 			{
-				if (rem >= -90 && rem < 0)order.eturn = 1;
+				if (rem >= -90 && rem <= 0)order.eturn = 1;
 				if (rem < -90)order.eturn = -1;
 			}
 			if (m.x > 1286)
@@ -554,15 +599,40 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			}
 			if (m.y > 600)
 			{
-				if (rem>0 && rem <= 90)order.eturn = -1;
+				if (rem>=0 && rem <= 90)order.eturn = -1;
 				if (rem>90)order.eturn = 1;
 			}
-
-			Circle a1 = {0};
-			for (int i = 0; i < 200; ++i)
+			if (info.robotInformation[1 - myID].weaponTypeName == WT_Cannon)
 			{
-				if ((a[i].launcherID == 1 - myID)&&howfar(o.x, o.y, m.x, m.y) > howfar(o.x, o.y, a[i].circle.x, a[i].circle.y)-50)
+				if (m.y < 80)
 				{
+					if (rem >= -90 && rem <= 0)order.eturn =- 1;
+					if (rem < -90)order.eturn = 1;
+				}
+				if (m.x > 1286)
+				{
+					if (rem >= 0 && rem < 90)order.eturn = -1;
+					if (rem <= 0 && rem>-90)order.eturn = 1;
+				}
+
+				if (m.x < 80)
+				{
+					if (rem >90)order.eturn = 1;
+					if (rem <-90)order.eturn = -1;
+				}
+				if (m.y > 600)
+				{
+					if (rem>0 && rem <= 90)order.eturn = 1;
+					if (rem>90)order.eturn = -1;
+				}
+
+			}
+			Circle a1 = {0};
+			for (int i = 0; i < info.num_bullet + 1; ++i)
+			{
+				if ((a[i].launcherID == 1 - myID)&&howfar(o.x, o.y, m.x, m.y) > howfar(o.x, o.y, a[i].circle.x, a[i].circle.y)-70&&a[i].circle.x!=0)
+				{
+					
 					Circle B = a[i].circle;
 					B.r = a[i].vy / a[i].vx;
 					v.x = info.robotInformation[myID].vx;
@@ -580,32 +650,61 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 						p.x = o.x;
 						p.y = B.r*(o.x - B.x) + B.y;
 					}
-					if (p.x > 0 && p.x < 1366 && p.y>0 && p.y < 680)
+					double t1, t2 = 0;
+					t1 = (p.x - B.x) / (11 * cos(rf*PI / 180));
+					if (t1 < 1 && t1>0){ t1 = (p.y - B.y) / (11 * sin(rf*PI / 180)); }
+					Circle p1;
+					if (t1 > 0)
 					{
-						double t1, t2 = 0;
-						t1 = (p.x - B.x) / (11 * cos(rf*PI / 180));
-						if (t1 < 1 && t1>0){ t1 = (p.y - B.y) / (11 * sin(rf*PI / 180)); }
-						Circle p1;
-						if (t1 > 0)
+						p1.x = o.x + t1*v.x;
+						p1.y = o.y + t1*v.y;
+						if (howfar(p1.x, p1.y, p.x, p.y) < 1.6*o.r)
 						{
-							p1.x = o.x + t1*v.x;
-							p1.y = o.y + t1*v.y;
-							if (howfar(p1.x, p1.y, p.x, p.y) < 1.4*o.r )
-							{
-								a1.x = a[i].circle.x;
-								a1.y = a[i].circle.y;
-								a1.r++;
-							}
+							a1.x = a[i].circle.x;
+							a1.y = a[i].circle.y;
+							a1.r++;
 						}
 					}
+					/*if (m.y < 80 && m.x>80 && m.x < 1286 || m.y>600 && m.x > 80 && m.x < 1286 || m.x < 80 && m.y>80 && m.y < 600 || m.x>1286 && m.y>80 && m.y < 600)
+					{
+						a1.x = a[i].circle.x;
+						a1.y = a[i].circle.y;
+						a1.r++;
+					}*/
 					if (abs(a[i].rotation - rem) < 3 || abs(AnglePlus(a[i].rotation, 180) - rem) < 3||abs(B.r - k) < 0.1)
 					{
 						a1.x = a[i].circle.x;
 						a1.y = a[i].circle.y;
 						a1.r++;
 					}
+					if (info.robotInformation[1 - myID].weaponTypeName == WT_RPG)
+					{
+						a1.x = a[i].circle.x;
+						a1.y = a[i].circle.y;
+						a1.r++;
+					}
+					if (info.robotInformation[1 - myID].weaponTypeName == WT_Cannon)
+					{
+						a1.x = a[i].circle.x;
+						a1.y = a[i].circle.y;
+						a1.r++;
+					}
+					double r5;
+					r5 = RadianToAngle(asin(m.r / howfar(a[i].circle.x, a[i].circle.y,m.x,m.y)));
+					double r6;
+					r6 = getAngle(B, m);
+					double r7;
+					r7 = AnglePlus(a[i].rotation, -r6);
+					if (abs(r7) < 1.3 * r5)
+					{
+						a1.x = a[i].circle.x;
+						a1.y = a[i].circle.y;
+						a1.r++;
+					}
 				}
+				
 			}
+			
 			a1.x /= a1.r;
 			a1.y /= a1.r;
 			//system("pause");
@@ -613,43 +712,76 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			pp = AnglePlus(rem, -pp);
 			if (pp>= 0)order.eturn = 1;
 			if (pp< 0)order.eturn = -1;
-		//	cout << pp << '\n' << rem<< '\n';
-
-			if (info.robotInformation[myID].remainingAmmo > 15 || info.arsenal[a12].respawning_time > 0)
-			{
-				if (m.x < 80 && m.y < 80)
+		
+				if (m.y < 80 && m.x>80 && m.x < 1286 || m.y>600 && m.x > 80 && m.x < 1286 || m.x < 80 && m.y>80 && m.y < 600 || m.x>1286 && m.y>80 && m.y < 600)
 				{
-					if (rem >= -135&& rem <= -45)order.eturn = 1;
-					if (rem>135 || rem <= -135)order.eturn = -1;
+					if (m.y < 80)
+					{
+						if (rem <= -90 || rem > 90)order.eturn = -1;
+						else order.eturn = 1;
+					}
+					if (m.x > 1286)
+					{
+						if (rem >= 0)order.eturn = 1;
+						else order.eturn = -1;
+					}
+
+					if (m.x < 80)
+					{
+						if (rem >= 0)order.eturn = -1;
+						else order.eturn = 1;
+					}
+					if (m.y > 600)
+					{
+						if (rem <= -90 || rem >= 90)order.eturn = 1;
+						else order.eturn = -1;
+					}
 				}
+			
+		//	cout << pp << '\n' << rem<< '\n';
+		
+			if (m.x < 80 && m.y < 80)
+			{
+				if (rem >= -135 && rem <= -45)order.eturn = 1;
+				if (rem>135 || rem <= -135)order.eturn = -1;
+			}
+			if (m.x > 1286 && m.y > 600)
+			{
+				if (rem <= 135 && rem >= 45)order.eturn = 1;
+				if (rem<45 && rem > -45)order.eturn = -1;
+			}
+			if (info.robotInformation[myID].remainingAmmo > 15 || info.arsenal[a12].respawning_time > 0 || info.robotInformation[myID].remainingAmmo >= info.robotInformation[1 - myID].hp)
+			{
+				
 				if (m.x > 1286 && m.y < 80)
 				{
 					if (rem >= -45 && rem <= 45)order.eturn = 1;
 					if (rem>-135 && rem < -45)order.eturn = -1;
 				}
-				if (m.x > 1286 && m.y > 600)
-				{
-					if (rem <= 135 && rem >= 45)order.eturn = 1;
-					if (rem<45 && rem > -45)order.eturn = -1;
-				}
+			
 				if (m.x < 80 && m.y>600)
 				{
 					if (rem <= 135 && rem >= 45)order.eturn = -1;
 					if (rem>135 || rem <= -135)order.eturn = 1;
 				}
+			}		
+			if (info.robotInformation[1 - myID].remainingAmmo * 25<info.robotInformation[myID].hp&&
+				info.robotInformation[myID].remainingAmmo * 3>info.robotInformation[1 - myID].hp)
+			{
+				if (ro > 3) order.eturn = -1;
+				if (ro < -3) order.eturn = 1;
 			}
-
+			//static int tt = 0;
+			//tt++;
+		//	if (tt < 45)order.eturn = 0;
 			
-
 		}
-		static int tt = 0;
-		tt++;
-		if (tt < 45)order.eturn = 0;
 	}
 	else
 	{
-		controlfire(m, o, rf, order.fire, order.wturn, v, 0);
+		//controlfire(m, o, rf, order.fire, order.wturn, v, 0);
 		if (howfar(m.x, m.y, o.x, o.y) > 500)order.fire = 0;
+		if (howfar(m.x, m.y, o.x, o.y) > 200 && (info.robotInformation[myID].remainingAmmo - 3) * 7<info.robotInformation[1 - myID].hp)order.fire = 0;
 		if (howfar(m.x, m.y, o.x, o.y) > 550)
 		{
 			if (ro>3) order.eturn = -1;
@@ -690,13 +822,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			if (rem >= -90 && rem < 0)order.eturn = 1;
 			if (rem < -90)order.eturn = -1;
 		}
-		if (m.x > 1286)
+		if (m.x > 966)
 		{
 			if (rem >= 0 && rem < 90)order.eturn = 1;
 			if (rem <= 0 && rem>-90)order.eturn = -1;
 		}
 
-		if (m.x < 80)
+		if (m.x < 400)
 		{
 			if (rem >90)order.eturn = -1;
 			if (rem <-90)order.eturn = 1;
@@ -761,13 +893,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		if (info.robotInformation[myID].remainingAmmo > 12 || info.arsenal[a12].respawning_time > 0)
 		{
 			
-			if (m.x > 1286 && m.y < 80)
+			if (m.x > 966 && m.y < 80)
 			{
 				if (rem >= -45 && rem <= 45)order.eturn = 1;
 				if (rem>-135 && rem < -45)order.eturn = -1;
 			}
 		
-			if (m.x < 80 && m.y>600)
+			if (m.x < 400 && m.y>600)
 			{
 				if (rem <= 135 && rem >= 45)order.eturn = -1;
 				if (rem>135 || rem <= -135)order.eturn = 1;
@@ -836,7 +968,7 @@ string RobotAI::GetAuthor()
 int RobotAI::GetWeaponRed()
 {
 	//返回一个-255-255之间的整数,代表武器红色的偏移值
-	return 0;
+	return 34;
 }
 int RobotAI::GetWeaponGreen()
 {
@@ -846,7 +978,7 @@ int RobotAI::GetWeaponGreen()
 int RobotAI::GetWeaponBlue()
 {
 	//返回一个-255-255之间的整数,代表武器蓝色的偏移值
-	return 200;
+	return 123;
 }
 
 
@@ -856,17 +988,17 @@ int RobotAI::GetWeaponBlue()
 int RobotAI::GetEngineRed()
 {
 	//返回一个-255-255之间的数,代表载具红色的偏移值
-	return 0;
+	return 65;
 }
 int RobotAI::GetEngineGreen()
 {
 	//返回一个-255-255之间的整数,代表载具绿色的偏移值
-	return 0;
+	return -23;
 }
 int RobotAI::GetEngineBlue()
 {
 	//返回一个-255-255之间的整数,代表载具蓝色的偏移值
-	return 0;
+	return 89;
 }
 
 

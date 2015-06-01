@@ -34,7 +34,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	
 	static int hp_tag = tag.hp;
 	/*静态成员列表*/
-	
+
 	
 	//开火操作
     if (frame != 0)
@@ -53,12 +53,27 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	//	auto bullet = info.bulletInformation[b_index_nearest];
  //       isDodge = onDodge(order, info, myID, bullet);
 	//}
+
+
+	//获取地方子弹数组，并按距离升序排列
 	int b_tag = 0;
 	for (int b_index = 0; b_index <= info.num_bullet; b_index++)
 	{
 		auto bullet = info.bulletInformation[b_index];
 		if (bullet.launcherID == myID)continue;
 		b_tag++;
+	}
+
+	if (frame < 500)
+	{
+	/*	cout << "zhen下面" << frame << endl << "无序数组" << endl;*/
+		for (int b_index = 0; b_index <= info.num_bullet; b_index++)
+		{
+			auto bullet = info.bulletInformation[b_index];
+			if (bullet.launcherID == myID)continue;
+			//cout << dis(info.bulletInformation[b_index].circle, me.circle) << " & ";
+		}
+		//cout << endl;
 	}
 	int *bulArray = new int[b_tag];
 	int bulArray_index = 0;
@@ -69,12 +84,19 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		bulArray[bulArray_index] = b_index;
 		bulArray_index++;
 	}
-	for (int i = 0; i < bulArray_index; i++)
+	/*if (frame < 500)
 	{
-		for (int j = 0; j < i; j++)
+		cout << "未排数组" << GetNearetBul(order, info, myID) << "^" << bulArray[0] << endl;
+		for (int i = 0; i < bulArray_index; i++)
+			cout << dis(info.bulletInformation[bulArray[i]].circle, me.circle) << " & ";
+		cout << endl;
+	}*/
+	for (int i = bulArray_index; i > 0; i--)
+	{
+		for (int j = 0; j < bulArray_index-1; j++)
 		{
 			if (dis(info.bulletInformation[bulArray[j]].circle, me.circle) <=
-				dis(info.bulletInformation[bulArray[j + 1]].circle, me.circle))
+				dis(info.bulletInformation[bulArray[j + 1]].circle, me.circle)  )
 				continue;
 			else
 			{
@@ -83,16 +105,26 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 				bulArray[j] = temp;
 			}
 		}
+
 	}
+
+	
 	
 	if (bulArray_index!=0)//如果有敌方子弹则进行躲避判断
 	{
 		int b_index_nearest = bulArray[0];
-		if (frame < 500)cout <<frame<<"*"<< GetNearetBul(order,info,myID) << "^" << bulArray[0] << endl;
+		//if (frame < 500)
+		//{
+		//	cout << "有序数组" << GetNearetBul(order, info, myID) << "^" << bulArray[0] << endl;
+		//	for (int i = 0; i < bulArray_index; i++)
+		//	cout << dis(info.bulletInformation[bulArray[i]].circle, me.circle) << " & ";
+		//	cout << endl;
+		//}		
 		auto bullet = info.bulletInformation[b_index_nearest];
-	       isDodge = onDodge(order, info, myID, bullet);
-
+		//isDodge = onDodge(order, info, myID, bullet);
 	}
+	isDodge = onDodge2(order, info, myID);
+	
 
 	//正常移动操作
 	//isDodge = false;
@@ -100,6 +132,9 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	{
 		onMove1(order, info, myID, tag.circle);
 	}
+
+	
+
 	//静态变量更新
 	hp_tag = tag.hp;
 	frame++;
@@ -122,8 +157,8 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	MyCar = AFV_Esaw;
 	if (MyCar == AFV_Esaw)//幽灵电锯
 	{
-		weapon = WT_ElectricSaw;	
-		engine = ET_AFV;	
+		weapon = WT_ElectricSaw;
+		engine = ET_AFV;
 	}
 	if (MyCar == AFV_Prism)//幽灵光棱
 	{
@@ -272,8 +307,34 @@ bool RobotAI::HaveBarrier(const RobotAI_BattlefieldInformation& info,const int m
 		else
 			return true;	
 	}
-
 }
+
+bool RobotAI::HaveBarrier(const RobotAI_BattlefieldInformation& info, const int myID, Circle obs_circle)
+{
+	auto me = info.robotInformation[myID];
+	auto tag = info.robotInformation[1 - myID];
+	double c = dis(tag.circle, obs_circle);
+	double b = obs_circle.r;
+	double a = sqrt(c*c - b*b);
+	double rotaob = abvalue( atan2(b ,a) * 180 / PI);
+	double rota1 = atan2(obs_circle.y-tag.circle.y, obs_circle.x-tag.circle.x) * 180 / PI;//障碍物和tag夹角
+	double c2 = dis(tag.circle, me.circle);
+	double b2 = me.circle.r;
+	double a2 = sqrt(c2*c2 - b2*b2);
+	double rotame = abvalue(atan2(b2, a2) * 180 / PI);
+	double rota2 = atan2(me.circle.y - tag.circle.y, me.circle.x - tag.circle.x) * 180 / PI;//我方和tag夹角
+	double r1 = rota2 + rotame;
+	double r2 = rota2 - rotame;
+	double t1 = rota1 + rotaob;
+	double t2 = rota1 - rotaob;
+	AngleAdjust(r1); AngleAdjust(r2); AngleAdjust(t1); AngleAdjust(t2);
+	if (r1 <= t1&&r2 >= t2)
+		return true;
+	else
+		return false;
+}
+
+
 
 int RobotAI::GetNearetBul(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID)
 {
@@ -352,6 +413,23 @@ void RobotAI::onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation
 	double Rota = atan2(dy, dx) * 180 / PI;
 	onMove1(order, info, myID, Rota);
 }
+
+void RobotAI::onMoveCircle(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const double x_tag, const double y_tag)
+{
+	auto me = info.robotInformation[myID];
+	double dx = x_tag - me.circle.x;
+	double dy = y_tag - me.circle.y;
+	double Rota = atan2(dy, dx) * 180 / PI;
+	Circle tag_circle;
+	tag_circle.x = x_tag;
+	tag_circle.y = y_tag;
+	if (dis(me.circle, tag_circle) <= me.circle.r)
+		order.run = 0;
+	else
+	onMove1(order, info, myID, Rota);
+}
+
+
 
 void RobotAI::onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const double rota_tag)
 {
@@ -441,25 +519,50 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 	switch (MyCar)
 	{
 	case AFV_Esaw:
+	case AFV_Prism:
+	case AFV_WT_Machinegun:
 		if (order.fire == 1)
 			return false;
-		switch (Type_Bul)
+		switch (tag.weaponTypeName)
 		{
-		case BT_ShotgunBall:
-		case BT_MachinegunBall:
-			order.eturn = 1;
-			order.run = 1;
-			return true;
-			break;
-		case BT_Cannonball:
-		case BT_ApolloBall:
-		case BT_PlasmaBall:
-			if ( (tag.remainingAmmo+2)*getBulletDamage(bullet.type) < me.hp)
+		case WT_Shotgun:
+		case WT_Machinegun:
+			if ((tag.remainingAmmo + 2)*getBulletDamage(bullet.type) < me.hp ||
+				(dis(me.circle, tag.circle) <= me.circle.r * 3) )
+			{
+				onMove1(order, info, myID, tag.circle);
+				return true;
+			}
+			else{
+				int arsen;
+				if (dis(info.arsenal[0].circle, me.circle) >= dis(info.arsenal[1].circle, me.circle))
+					arsen = 1; else arsen = 0;
+				if (info.arsenal[arsen].respawning_time == 0)
+				{
+					onMove1(order, info, myID, info.arsenal[arsen].circle);
+					return true;
+				}
+				if (dis(me.circle, info.obstacle[0]) >= dis(me.circle, info.obstacle[1]))
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[1]);
+				else
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[0]);
+			}
+		case WT_Cannon:
+		case WT_Apollo:
+		case WT_PlasmaTorch:
+			if ( (tag.remainingAmmo+2)*getBulletDamage(bullet.type) < me.hp||
+				(dis(me.circle, tag.circle) <= me.circle.r * 3) )
 			{
 				onMove1(order, info, myID, tag.circle );
 				return true;
 			}
-			if (!inHitRange)return false;	
+			else{				
+				if (dis(me.circle, info.obstacle[0]) >= dis(me.circle, info.obstacle[1]))
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[1]);
+				else
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[0]);
+			}
+			
 			//接近型躲避方案1
 			//AngleAdjust(tag_vrota);
 			//if (tag_vrota>me.engineRotation)
@@ -472,17 +575,8 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 			//	order.eturn = -1;
 			//	order.run = 1;
 			//}
-
 			//直接绕圈躲避方案2
-				order.eturn = 1;
-				order.run = 1;
-				return true;
-			if (!WillHit(bullet, me))
-			{
-				return false;
-			}
-
-				return true;	
+			return false;
 			break;
 
 		default:
@@ -501,12 +595,141 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 		}
 		break;
 		/*…………………………………………………………*/
-	case AFV_Prism:
-	case AFV_WT_Machinegun:
-		break;
 		return false;
 	}
 }
+
+bool  RobotAI::onDodge2(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID)
+//躲闪函数，如果发出了躲避命令，则返回true;
+{
+	auto me = info.robotInformation[myID];
+	auto tag = info.robotInformation[1 - myID];
+	double dy = me.circle.y-tag.circle.y;
+	double dx = me.circle.x - tag.circle.x;
+	double Rota_bulv = tag.engineRotation-atan2(dy, dx) * 180 / PI;//子弹速度方向
+	AngleAdjust(Rota_bulv);
+	bool isNear;
+	switch (MyCar)
+	{
+	case AFV_Esaw:
+	case AFV_Prism:
+	case AFV_WT_Machinegun:
+		if (order.fire == 1)
+			return false;
+		switch (tag.weaponTypeName)
+		{
+		case WT_Shotgun:
+			if ((tag.remainingAmmo + 1) * 50 < me.hp ||
+				(dis(me.circle, tag.circle) <= me.circle.r *2))
+			{
+				onMove1(order, info, myID, tag.circle);
+				return true;
+			}
+			else{
+				int arsen;
+				if (dis(info.arsenal[0].circle, me.circle) >= dis(info.arsenal[1].circle, me.circle))
+					arsen = 1; else arsen = 0;
+					if (info.arsenal[arsen].respawning_time == 0&&
+						dis(info.arsenal[arsen].circle,tag.circle)>=700)
+					{
+						onMove1(order, info, myID, info.arsenal[arsen].circle);
+						return true;
+					}
+				
+				if (dis(me.circle, info.obstacle[0]) >= dis(me.circle, info.obstacle[1]))
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[1]);
+				else
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[0]);
+			}
+			break;
+		case WT_Machinegun:
+			if ((tag.remainingAmmo + 5)*7 < me.hp||
+				(dis(me.circle, tag.circle) <= me.circle.r * 2)
+				)		
+			{
+				onMove1(order, info, myID, tag.circle);
+				return true;
+			}
+			else{
+				int arsen;
+				if (dis(info.arsenal[0].circle, me.circle) >= dis(info.arsenal[1].circle, me.circle))
+					arsen = 1; else arsen = 0;
+				if (info.arsenal[arsen].respawning_time == 0)
+				{
+					onMove1(order, info, myID, info.arsenal[arsen].circle);
+					return true;
+				}
+				if (dis(me.circle, info.obstacle[0]) >= dis(me.circle, info.obstacle[1]))
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[1]);
+				else
+					return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[0]);
+			}
+			break;
+		case WT_Cannon:
+		case WT_Apollo:
+		case WT_PlasmaTorch:
+			if ((tag.remainingAmmo + 2)*25 < me.hp ||
+				(dis(me.circle, tag.circle) <= me.circle.r * 3)
+				)
+			{
+				onMove1(order, info, myID, tag.circle);
+				return true;
+			}
+			int arsen;
+
+			if (dis(me.circle, info.obstacle[0]) >= dis(me.circle, info.obstacle[1]))
+				return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[1]);
+			else
+				return onDodgeCircle(order, info, myID, tag.circle, info.obstacle[0]);
+			
+
+			//接近型躲避方案1
+			//AngleAdjust(tag_vrota);
+			//if (tag_vrota>me.engineRotation)
+			//{
+			//	order.eturn = 1;
+			//	order.run = 1;
+			//}
+			//else
+			//{
+			//	order.eturn = -1;
+			//	order.run = 1;
+			//}
+			//直接绕圈躲避方案2
+			return false;
+			break;
+
+		default:
+			//躲低速子弹，躲避方案3
+			return false;
+		}
+		break;
+		/*…………………………………………………………*/
+		return false;
+	}
+}
+
+bool RobotAI::onDodgeCircle(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const Circle tag, const Circle ob){
+	if (HaveBarrier(info, myID, ob))
+	{
+		order.run = 0;
+		return true;
+	}	
+	//if (dis(ob, info.robotInformation[myID].circle) <= ob.r * 2)
+	//{
+	//	cout << "在圈后" << endl;
+	//	order.run = 0;
+	//	return true;
+	//}
+	double a = tag.x - ob.x;
+	double b = tag.y - ob.y;
+	double c = sqrt(a*a + b*b);
+	double tagx = ob.x - dis(info.robotInformation[myID].circle,ob)*a / c;
+	double tagy = ob.y - dis(info.robotInformation[myID].circle,ob)*b / c;
+	onMoveCircle(order, info, myID, tagx, tagy);
+	return true;
+}
+
 
 bool RobotAI::WillNotHit(const RobotAI_BulletInformation& bullet, const RobotAI_RobotInformation& rotinfo)
 //判断在之后短时间内绝对不可能达到的子弹
@@ -532,7 +755,7 @@ bool RobotAI::WillNotHit(const RobotAI_BulletInformation& bullet, const RobotAI_
 	bool pRotaTest = (Rota_place<Rota_engine_upb && Rota_place>Rota_engine_downb);
 
 	if (!HitTest&&vRotaTest&&pRotaTest)
-		return true;
+		return true;//如果不会打到了就返回true
 	else return false;
 }
 
@@ -618,6 +841,8 @@ double RobotAI::dis(double x1, double y1, double x2, double y2) {
 double RobotAI::dis(const Circle& a, const Circle& b){
 	return dis(a.x, a.y, b.x, b.y);
 }
+
+
 
 
 

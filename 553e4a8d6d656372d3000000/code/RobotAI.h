@@ -123,6 +123,7 @@ public:
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
 
 	bool HaveBarrier(const RobotAI_BattlefieldInformation& info,const int myID,const int ArID);//判断和地方之间是否有障碍物
+	bool HaveBarrier(const RobotAI_BattlefieldInformation& info, const int myID, Circle obs_circle);//判断和地方之间是否有障碍物obs_circle
 	int GetNearetBul(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//获取最近的子弹下标
 
 	/*<<<<<<<对每个机甲适应的部分(多个重载函数时，最下方为适应函数)*/
@@ -132,11 +133,12 @@ public:
 	void onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID,const Circle circle_tag);//移动到(circle_tag.x,circle_tag.y）的函数
 	void onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const double x_tag, const double y_tag);//移动到(x_tag,y_tag)的函数
 	void onMove1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const double rota_tag);//向rota_tag（角度）移动
-	
+	void onMoveCircle(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const double x_tag, const double y_tag);//移动到某个圈的范围内
 	void onFire1(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//开火函数
 
 	bool onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const RobotAI_BulletInformation& bullet);//躲闪函数
-
+	bool onDodge2(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID);//没子弹时躲闪函数
+	bool onDodgeCircle(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, const int myID, const Circle tag, const Circle ob);//围绕某个圈ob进行躲避tag
 	/*对每个机甲适应的部分>>>>>>>*/
 
 	bool WillNotHit(const RobotAI_BulletInformation& bullet, const RobotAI_RobotInformation& rotinfo);//判断子弹绝对不会打到

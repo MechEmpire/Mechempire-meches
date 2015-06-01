@@ -10,6 +10,8 @@ protected:
 	//TODO:可以在这里添加你自己的成员变量
 	RobotAI_RobotInformation me;
 	RobotAI_RobotInformation enemy;
+	RobotAI_ArsenalInformation arsenal[2];
+	Circle obstacle[2];
 	double enemy_lastx;
 	double enemy_lasty;
 
@@ -120,14 +122,18 @@ public:
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
 
+	virtual double charge();
+	virtual double supply();
+	virtual double defend();
 
-	virtual RobotAI_Order rotate(double, double, int, bool);
+	virtual RobotAI_Order rotate(double, double, bool, bool);
 	virtual double distance(double, double, double, double);
 	virtual double distance(Circle, Circle);
 	virtual double theta(double, double, double, double);
 	virtual double theta(Circle, Circle);
 	virtual double dtheta(double, double);
-	virtual Circle forecast(Circle, double, double, double);
-	virtual int block(Circle, Circle, double);
-	virtual Circle adjustdest(Circle);
+	virtual Circle forecast(double);
+	virtual bool block(Circle, Circle, double);
+	virtual double adjustdest(double);
+	virtual double adjustobstacle(double);
 };

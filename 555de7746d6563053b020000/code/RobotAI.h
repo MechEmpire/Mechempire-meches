@@ -12,6 +12,9 @@ protected:
 	Circle *arsenal;
 	Circle *obstacle;
 	int randId;
+	int fireControl;
+	int disControl;
+	int fireContorlMax;
 public:
 
 	//************************************************

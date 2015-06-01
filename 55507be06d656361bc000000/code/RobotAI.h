@@ -7,34 +7,34 @@ const int width = 680;
 /*
 struct bulletRecorded
 {
-	int entityID;
+int entityID;
 
 
-	//temp
-	bullettypename type;		//子弹类型,属性数据查表获得
+//temp
+bullettypename type;		//子弹类型,属性数据查表获得
 
-	Circle circle;		//bullet的圆(x,y,radium)
-	double rotation;	//引擎角度
-	double vx, vy, vr;
-	double lastx, lasty;
-	bulletRecorded()
-	{
-		lastx = 0; lasty = 0;
-	}
-	bulletRecorded(RobotAI_BulletInformation& in)
-	{
-		entityID = in.entityID;
-		type = in.type;
-		circle = in.circle;
-		rotation = in.rotation;
-		vx = in.vx;
-		vy = in.vy;
-		vr = in.vr;
-		lastx = 0; lasty = 0;
-	}
+Circle circle;		//bullet的圆(x,y,radium)
+double rotation;	//引擎角度
+double vx, vy, vr;
+double lastx, lasty;
+bulletRecorded()
+{
+lastx = 0; lasty = 0;
+}
+bulletRecorded(RobotAI_BulletInformation& in)
+{
+entityID = in.entityID;
+type = in.type;
+circle = in.circle;
+rotation = in.rotation;
+vx = in.vx;
+vy = in.vy;
+vr = in.vr;
+lastx = 0; lasty = 0;
+}
 };*/
 
-class RobotAI:public RobotAI_Interface
+class RobotAI :public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
@@ -60,7 +60,7 @@ public:
 	//		info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
 	//		(这几个参数的详细说明在开发手册可以找到，你也可以在RobotAIstruct.h中直接找到它们的代码)
-	virtual void Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID);
+	virtual void Update(RobotAI_Order& order, const RobotAI_BattlefieldInformation& info, int myID);
 
 
 
@@ -71,7 +71,7 @@ public:
 	//tip:	括号里的参数是枚举类型 weapontypename 或 enginetypename
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
-	virtual void ChooseArmor(weapontypename& weapon,enginetypename& engine,bool);
+	virtual void ChooseArmor(weapontypename& weapon, enginetypename& engine, bool);
 
 
 	//-----------------------------------------------------
@@ -118,14 +118,14 @@ public:
 	//一场战斗开始时被调用，可能可以用来初始化
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
-	virtual void onBattleStart(const RobotAI_BattlefieldInformation& info,int myID);
+	virtual void onBattleStart(const RobotAI_BattlefieldInformation& info, int myID);
 
 
 
 	//一场战斗结束时被调用，可能可以用来析构你动态分配的内存空间（如果你用了的话）
 	//参数：info	...	战场信息
 	//		myID	... 自己机甲在info中robot数组对应的下标
-	virtual void onBattleEnd(const RobotAI_BattlefieldInformation& info,int myID);
+	virtual void onBattleEnd(const RobotAI_BattlefieldInformation& info, int myID);
 
 
 	//有机甲开火时被调用
@@ -135,7 +135,7 @@ public:
 
 	//被子弹击中时被调用
 	//参数：btn	...	击中你的子弹种类（枚举类型）
-	virtual void onHit(int,bullettypename);
+	virtual void onHit(int, bullettypename);
 
 	//-------------------------------------------------------------
 
@@ -146,12 +146,15 @@ public:
 
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
-	private:
-		void detectBullet(const RobotAI_BattlefieldInformation& info, int myID);
-		int check(int xUp,int yUp,int xDown,int yDown);
+private:
+	void detectBullet(const RobotAI_BattlefieldInformation& info, int myID);
+	int check(int xUp, int yUp, int xDown, int yDown);
 	//	map<int, bulletRecorded> Bullets;//used to record them
-		void goal(const RobotAI_BattlefieldInformation& info,int myID);
-		int previewNum;
-		int xOb1, xOb2, yOb1, yOb2, obr;
-		int superAttack, lastX, lastY;//record the position of the opponent last time
+	void goal(const RobotAI_BattlefieldInformation& info, int myID);
+	int previewNum;
+	int xOb1, xOb2, yOb1, yOb2, obr;
+	void setGoal();
+	int triggerNum; int xNow, yNow,R;
+	int xGoal, yGoal; int num;
+	//int superAttack, lastX, lastY;//record the position of the opponent last time
 };

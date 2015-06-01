@@ -1,5 +1,6 @@
 ﻿#include "RobotAI.h"
 #include<iostream>
+
 RobotAI::RobotAI()
 {
 	
@@ -16,7 +17,7 @@ RobotAI::~RobotAI()
 //-----------------------------------------------------
 //1.必须完成的战斗核心
 //-----------------------------------------------------
-
+static int frame = 0;
 
 void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& info,int myID)
 {
@@ -30,13 +31,12 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	auto me = info.robotInformation[myID];
 	auto tag = info.robotInformation[1 - myID];
 	/*静态成员列表*/
-	static int frame = 0;
+	
 	static int hp_tag = tag.hp;
 	/*静态成员列表*/
-
-
+	
+	
 	//开火操作
-	//cout << "*******************当前帧数" << frame << endl;
     if (frame != 0)
 	{
 			onFire1(order, info, myID);
@@ -54,15 +54,13 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
         isDodge = onDodge(order, info, myID, bullet);
 
 	}
-	
-	
+
 	//正常移动操作
 	//isDodge = false;
 	if (!isDodge)
 	{
 		onMove1(order, info, myID, tag.circle);
 	}
-
 	//静态变量更新
 	hp_tag = tag.hp;
 	frame++;
@@ -119,7 +117,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "中二锯子";
+	return "艾欧尼亚闪电";
 }
 
 string RobotAI::GetAuthor()
@@ -392,12 +390,13 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 //躲闪函数，如果发出了躲避命令，则返回true;
 {		
 	auto me = info.robotInformation[myID];
-	auto tag = info.robotInformation[myID];
+	auto tag = info.robotInformation[1-myID];
 	bool inHitRange = dis(bullet.circle, me.circle) <= 0.6 * me.circle.r *getBulletSpeed(bullet.type);//判断在监控范围内再躲
 	double Rota_bulv = atan2(bullet.vy, bullet.vx) * 180 / PI;//子弹速度方向
 	double Rota_bulv_ag = Rota_bulv - 180;//子弹速度反方向
 	AngleAdjust(Rota_bulv_ag);
 	auto Type_Bul = bullet.type;
+
 	switch (MyCar)
 	{
 	case AFV_Esaw:
@@ -413,26 +412,19 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 			break;
 		case BT_Cannonball:
 		case BT_ApolloBall:
-			if (tag.remainingAmmo <= 5)
+		case BT_PlasmaBall:
+			if ((tag.remainingAmmo + 2)*getBulletDamage(bullet.type) < me.hp)
 			{
-				return false;
+				onMove1(order, info, myID, tag.circle );
+				return true;
 			}
 			if (!inHitRange)return false;
-			order.eturn = 1;
-			order.run = 1;
-			return true;
+				order.eturn = 1;
+				order.run = 1;
+				return true;		
 			break;
 		default:
-			if (tag.remainingAmmo != 0)
-			{
-				return false;
-			}
-			if (!inHitRange)return false;
-			order.eturn = 1;
-			order.run = 1;
-			return true;
-			break;
-			/*if (!inHitRange)
+			if (!inHitRange)
 			{
 				return false;
 			}
@@ -442,7 +434,7 @@ bool  RobotAI::onDodge(RobotAI_Order& order, const RobotAI_BattlefieldInformatio
 				order.eturn = 1;
 			order.run = 1;
 			return true;
-			break;*/
+			break;
 		}
 		break;
 		/*…………………………………………………………*/

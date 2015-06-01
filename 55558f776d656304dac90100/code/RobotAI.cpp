@@ -33,17 +33,12 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	selfE.x=info.robotInformation[myID].circle.x;
 	selfE.y=info.robotInformation[myID].circle.y;
 
-	army_point.x=info.robotInformation[army].circle.x;
-	army_point.y=info.robotInformation[army].circle.y;
 	
-	self_point.x=info.robotInformation[myID].circle.x;
-	self_point.y=info.robotInformation[myID].circle.y;
 
 
 	
 	//距离计算
 	double distance=dis(selfE.x,armyE.x,selfE.y,armyE.y);
-	
 //	cout<<distance<<"  ";
 
 //	cout<<info.robotInformation[myID].engineRotation<<endl;
@@ -67,8 +62,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	angleE=info.robotInformation[myID].engineRotation;
 	//	cout<<"引擎角度 "<<angleW<<endl;
-
-
 	double sumangle=angleofTwoEngine+angleW;
 	double chaangle=angleofTwoEngine-angleW;
 //	cout<<"我方坐标"<<"("<<selfE.x<<","<<selfE.y<<")";
@@ -157,7 +150,6 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 
 
-    
 	
 
 
@@ -168,73 +160,159 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 
 	double k=(selfE.y-armyE.y)/(selfE.x-armyE.x);
 	double b=(selfE.y-selfE.x*k);
-	double lu=disLinePoint(k,b,barrierLU);
-	double rd=disLinePoint(k,b,barrierRD);
-	
-	double effectiveshotRadian=asin(armyE.r/distance);
-	double effectiveshotangle=RadianToAngle(effectiveshotRadian);
-	
-	
-	
+	double lu=fabs(k*barrierLU.x+b-barrierLU.y)/sqrt(k*k+1);
+	double rd=fabs(k*barrierRD.x+b-barrierRD.y)/sqrt(k*k+1);
+	double case2plu=(barrierLU.x-selfE.x)*(barrierLU.x-armyE.x);
+	double case2prd=(barrierRD.x-selfE.x)*(barrierRD.x-armyE.x);
 
-
-	if (info.robotInformation[myID].remainingAmmo>0)//有弹药
-	{	
-
-		
-		if (distance>1200)
+	if (distance<=850+armyE.r&&(fabs(sumangle)<=5||fabs(chaangle)<=5))
+	{
+		if ((case2plu<0&&lu<=barrierLU.r)||(case2prd<0&&rd<=barrierRD.r))
 		{
-			TurnToPoint(selfE,armyE,angleofTwoEngine,angleE,order);
-			
+			order.fire=0;
+			order.run=0;
 		}
 		else
 		{
-			if (distance<600)
-			{
-				if(selfE.x<700&&selfE.y<340)
-				
-				TurnToPoint(selfE,barrierRD,angleBetweenMeRD,angleE,order);
-				
-				if (selfE.x>700&&selfE.y>340)
-				TurnToPoint(selfE,barrierLU,angleBetweenMeLU,angleE,order);
-				
-				if (selfE.x>800&&selfE.y<340)
-				TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
-				if(selfE.x<700&&selfE.y>340)
-				TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
-			}
-			else
-			RunOffPoint(selfE,armyE,angleofTwoEngine,angleE,order);
-		}
-		
-
-
-		order.run=1;
-		if ((fabs(sumangle)<=effectiveshotangle||fabs(chaangle)<=effectiveshotangle))
-		{
-			if ((isTwoSide(self_point,army_point,barrierLU)&&lu<=barrierLU.r)||(isTwoSide(self_point,army_point,barrierRD)&&rd<=barrierRD.r))
-			{
-			order.fire=0;
-			}
-			else
-			{
-			
 			order.fire=1;
-
-			}
+			order.run=0;
+		}
 
 		
+	}
+
+
+
+
+		int bul_id;
+	double disbe=10000;
+	double tempdis;
+	bool hide=false;
+	
+	for (int i = 0; i < info.num_bullet; i++)
+	{
+		const auto& bul= info.bulletInformation[i];
+		if (bul.launcherID==army)
+		{
+			hide=true;
+			tempdis=dis(selfE.x, bul.circle.x,selfE.y,bul.circle.y) ;
+			if (tempdis<disbe)
+			{
+				disbe=tempdis;
+				bul_id=i;
+			}
 		}
+		
+	}
+
+	const auto& bullet= info.bulletInformation[bul_id];
+		//不是自己的子弹//子弹很近
+
+	if (hide&&disbe< 200&&info.robotInformation[myID].remainingAmmo>0)
+		{		
+			double k_bul=180*bullet.rotation/PI;
+			double b_bul=(bullet.circle.y-bullet.circle.x*k_bul);
+			double dis_bulAndE=disLinePoint(k_bul,b_bul,selfE);
+			double angleOFbe=sinangle(selfE,bullet.circle);
+				if(dis_bulAndE<selfE.r)
+				RunOffPoint(selfE,bullet.circle,angleOFbe,angleE,order);
+				else
+				order.run=0;
+		}
+	 //子弹远或者是自己子弹
+	 else
+	 {
+
+
+	if (info.robotInformation[myID].remainingAmmo>0)//有弹药
+	
+	{	
+				if (selfE.y>=armyE.y&&angleE>=0)
+	{
+
+//		cout<<"   我方在下  UFO朝下";
+		
+			if (sumangle2<=180&&sumangle2>=0)
+			{
+				order.eturn=-1;
+//				cout<<"逆时针转"<<endl;
+				
+			}	
+			if (sumangle2>=180&&sumangle2<=360)
+			{
+				order.eturn=1;
+//				cout<<"顺时针转"<<endl;
+			}			
+	}
+	if (selfE.y>=armyE.y&&angleE<=0)
+	{
+	
+
+//		cout<<"   我方在下  UFO朝上 ";
+			if (sumangle2>=0)
+			{
+			order.eturn=-1;
+//			cout<<"逆时针转"<<endl;
+			}
+			if (sumangle2<=-1)
+			{
+				order.eturn=1;
+//				cout<<"顺时针转"<<endl;
+			}
+			
+	}
+
+
+	if (selfE.y<=armyE.y&&angleE>=0)
+	{
+
+//		cout<<"   我方在上  UFO朝下 ";
+			if (chaangle2>=0)
+		{
+			order.eturn=1;
+//			cout<<"顺时针转"<<endl;
+		}
+		if (chaangle2<=-1)
+		{
+			order.eturn=-1;
+//			cout<<"逆时针转"<<endl;
+		}
+
+		
+	}
+
+
+	if (selfE.y<=armyE.y&&angleE<=0)
+	{
+//		cout<<"   我方在上  UFO朝上 ";
+
+
+			if (chaangle2<180&&chaangle2>=0)
+		{
+			order.eturn=1;
+//			cout<<"顺时针转"<<endl;
+		}
+		if (chaangle2>=180&&chaangle2<=359)
+		{
+			order.eturn=-1;
+//			cout<<"逆时针转"<<endl;
+		}
+
+		
+	}
+	
+		order.run=1;
 
 	}
-	else//无弹药
+	
+
+
+	else    //没有弹药
 	{
 		double disfire1=dis(info.arsenal[0].circle.x,selfE.x,info.arsenal[0].circle.y,selfE.y);
 		double disfire2=dis(info.arsenal[1].circle.x,selfE.x,info.arsenal[0].circle.y,selfE.y);
-		double angleoffire1=sinangle (selfE,info.arsenal[0].circle);
-		double angleoffire2=sinangle (selfE,info.arsenal[1].circle );
 
-		if(info.arsenal [0].respawning_time<10&&info.arsenal [1].respawning_time<10)//弹药库均冷却
+		if(info.arsenal [0].respawning_time<10&&info.arsenal [1].respawning_time<10)
 		{
 			if(disfire1<disfire2)
 				TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
@@ -244,34 +322,15 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 		}
 		else
 		{
-				if(info.arsenal [0].respawning_time<10)//弹药库1冷却
+				if(info.arsenal [0].respawning_time<10)
 			TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
-				else if(info.arsenal [1].respawning_time<10)//弹药库2冷却
+				else if(info.arsenal [1].respawning_time<10)
 			TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
-				else //均未冷却
-				{
-					
-					if (distance<600)
-					{
-
-					if(selfE.x<700&&selfE.y<340)				
-					TurnToPoint(selfE,barrierRD,angleBetweenMeRD,angleE,order);				
-					if (selfE.x>700&&selfE.y>340)
-					TurnToPoint(selfE,barrierLU,angleBetweenMeLU,angleE,order);				
-					if (selfE.x>800&&selfE.y<340)
-					TurnToPoint(selfE,info.arsenal[0].circle,angleoffire1 ,angleE,order);
-					if(selfE.x<700&&selfE.y>340)
-					TurnToPoint(selfE,info.arsenal[1].circle,angleoffire2 ,angleE,order);
-
-					}
-					else
-					RunOffPoint(selfE,armyE,angleofTwoEngine,angleE,order);
-				}
 		}
 		order.run=1;
 	}
+	}
 }
-
 
 
 
@@ -285,15 +344,8 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 	//		开发文档中有详细说明，你也可以在RobotAIstruct.h中直接找到它们的代码
 	//tip:	最后一个bool是没用的。。那是一个退化的器官
 
-	weapon = WT_Tesla;	
-	//weapon=WT_PlasmaTorch;
-	//weapon=WT_Cannon;
-	//weapon=WT_Prism;
-	//weapon=WT_Cannon;
-	//weapon=WT_Apollo;
-	//weapon=WT_Shotgun;
+	weapon = WT_Machinegun;	
 	engine = ET_UFO;	
-	//engine=ET_Shuttle;
 }
 
 
@@ -314,7 +366,7 @@ void RobotAI::ChooseArmor(weapontypename& weapon,enginetypename& engine,bool a)
 string RobotAI::GetName()
 {
 	//返回你的机甲的名字
-	return "cc!";
+	return "机枪3";
 }
 
 string RobotAI::GetAuthor()
@@ -562,8 +614,7 @@ bool RobotAI::HitTestCircles(Circle &c1, const Circle &c2)
 
 	}
 
-
-	double RobotAI::disLinePoint(double &k,double& b,const Circle& heart)
+		double RobotAI::disLinePoint(double &k,double& b,const Circle& heart)
 	{
 		return fabs(k*heart.x+b-heart.y)/sqrt(k*k+1);
 	}

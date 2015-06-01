@@ -224,27 +224,31 @@ public:
 			if(LToS0>obstacle[0].r&&LToS1>obstacle[1].r){
 				return true;
 			}else{
-				double LC0=A*obstacle[0].y-B*obstacle[0].x;
-				double vx0=-(A*C+B*LC0)/(A*A+B*B);
+				double LC0=B*obstacle[0].x-A*obstacle[0].y;
+				double vy0=-(B*C+A*LC0)/(A*A+B*B);
+				double vx0=(B*LC0-A*C)/(A*A+B*B);
 
-				double LC1=A*obstacle[1].y-B*obstacle[1].x;
-				double vx1=-(A*C+B*LC1)/(A*A+B*B);
+				double LC1=B*obstacle[1].x-A*obstacle[1].y;
+				double vy1=-(B*C+A*LC1)/(A*A+B*B);
+				double vx1=(B*LC1-A*C)/(A*A+B*B);
 
 				double right=self.x>enemy.x?self.x:enemy.x;
 				double left=self.x<enemy.x?self.x:enemy.x;
+				double top=self.y>enemy.y?self.y:enemy.y;
+				double bottom=self.y<enemy.y?self.y:enemy.y;
 
 				if(LToS0>obstacle[0].r&&LToS1<=obstacle[1].r){
-					if(vx1>=left&&vx1<=right){
+					if(vx1>=left&&vx1<=right&&vy1>=bottom&&vy1<=top){
 						return false;
 					}else return true;
 				}else if(LToS0<=obstacle[0].r&&LToS1>obstacle[1].r){
-					if(vx0>=left&&vx0<=right){
+					if(vx0>=left&&vx0<=right&&vy0>=bottom&&vy0<=top){
 						return false;
 					}else return true;
 				}else if(LToS0<=obstacle[0].r&&LToS1<=obstacle[1].r){
-					if(vx1>=left&&vx1<=right){
+					if(vx1>=left&&vx1<=right&&vy1>=bottom&&vy1<=top){
 						return false;
-					}if(vx0>=left&&vx0<=right){
+					}if(vx0>=left&&vx0<=right&&vy0>=bottom&&vy0<=top){
 						return false;
 					}else return true;
 				}
@@ -283,10 +287,6 @@ public:
 		}else if(myDisToAr0>EnDisToAr0&&myDisToAr1>EnDisToAr1){
 			if(arsenal[0].respawning_time==0&&arsenal[1].respawning_time==0){
 				return myDisToAr0>myDisToAr1?1:0;
-			}else if(arsenal[0].respawning_time==0&&arsenal[1].respawning_time!=0){
-				return 0;
-			}else if(arsenal[0].respawning_time!=0&&arsenal[1].respawning_time==0){
-				return 1;
 			}else return -1;
 		}else if(myDisToAr0<=EnDisToAr0&&myDisToAr1>EnDisToAr1){
 			if(arsenal[0].respawning_time==0){

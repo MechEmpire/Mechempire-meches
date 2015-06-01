@@ -60,27 +60,22 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 	order.eturn =  runAndrunAFV(me.circle, armor.circle, me.engineRotation);
 	
 		
-	//判断距离，不能太近	
-	double min_dist = 500;
-	//打猥琐飞弹和光棱只要贴脸干！其他的要远离，尤其是电锯！
-	if(armor.weaponTypeName == WT_MissileLauncher || armor.weaponTypeName ==WT_Prism || armor.weaponTypeName == WT_PlasmaTorch || armor.weaponTypeName == WT_RPG)
-		min_dist = 150;
-
-	if(distance_me_armor <= min_dist)//太近了就往回走
-		order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
 	
+	
+	
+	
+
 	//检查子弹打光没	
 	if(info.robotInformation[myID].remainingAmmo <= 2 )
-	{
-		Circle arsenal = whichArsenal(info.arsenal[0], info.arsenal[1], me.circle);
-		//没子弹了就去仓库领取
-		if(!(arsenal.x == 0 && arsenal.y == 0))
-			order.eturn = runAndrunAFV(me.circle,arsenal ,me.engineRotation);
+	{	
+			Circle arsenal = whichArsenal(info.arsenal[0], info.arsenal[1], me.circle);
+			//没子弹了就去仓库领取
+			if(!(arsenal.x == 0 && arsenal.y == 0))
+				order.eturn = runAndrunAFV(me.circle,arsenal ,me.engineRotation);	
 	}
-	
 	//等等！有子弹再打我？
 	//Circle bu[200];
-	int bu_num = info.num_bullet;
+	int bu_num = info.num_bullet + 1;//子弹数目有问题，应该是少了一个
 	bullettypename bu_type;//子弹类型
 	for(int i = 0; i < bu_num; i++){
 		if(info.bulletInformation[i].launcherID == 1 - myID){			
@@ -96,6 +91,17 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			}
 		}
 	}
+
+	//判断距离，不能太近	
+	double min_dist = 550;
+	//打猥琐飞弹和光棱只要贴脸干！其他的要远离，尤其是电锯！
+	if(armor.weaponTypeName == WT_MissileLauncher || armor.weaponTypeName ==WT_Prism || armor.weaponTypeName == WT_PlasmaTorch)
+		min_dist = 150;
+	if(armor.weaponTypeName == WT_RPG)
+		min_dist = 300;
+	if(distance_me_armor <= min_dist)//太近了就往回走
+		order.eturn =  runAndrunAFV(armor.circle, me.circle, me.engineRotation);
+	
 	
 	//靠墙？
 	if(me.circle.x <= 60 || me.circle.y <= 60 || 680 - me.circle.y <= 60 || 1366 - me.circle.x <= 60)
@@ -307,6 +313,9 @@ int RobotAI::avoidObstacleAFV(RobotAI_RobotInformation me, Circle obstacle)
 //如果有子弹靠近我
 bool RobotAI::BulletShotMe(RobotAI_BulletInformation bu, RobotAI_RobotInformation me)
 {
+	double dist = Distance(me.circle.x, me.circle.y, bu.circle.x, bu.circle.y);//我和子弹的距离
+	if(dist >= 800 && bu.type != BT_RPGBall && bu.type != BT_ApolloBall)//太远就不检测了，针对火箭弹和阿波罗要优化
+		return false;
 	double v1 = Distance(bu.vx,bu.vy,0,0), v2 = Distance(me.vx,me.vy,0,0);//v1是子弹速度，v2是我的速度
 	double me_angle = atan2(me.vy, me.vx) * 180 / PI, //我的角度
 		bu_me_angle = atan2(me.circle.y - bu.circle.y, me.circle.x - bu.circle.x) * 180 / PI,//我和子弹的角度
@@ -317,8 +326,7 @@ bool RobotAI::BulletShotMe(RobotAI_BulletInformation bu, RobotAI_RobotInformatio
 	AngleAdjust(B_angle);
 	AngleAdjust(C_angle);
 	C_angle = 180 - C_angle;
-	double a = Distance(me.circle.x, me.circle.y, bu.circle.x, bu.circle.y),
-		b = a * sin(B_angle) / sin(A_angle), c = a * sin(C_angle) / sin(A_angle);
+	double a = dist, b = a * sin(B_angle) / sin(A_angle), c = a * sin(C_angle) / sin(A_angle);
 	double t = c / v1;//t是时间
 	if( b - me.circle.r / sin(A_angle) <= v2 * t || v2 * t <= b + me.circle.r / sin(A_angle) )
 		return true;
@@ -411,7 +419,7 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 	double angle = atan2(armor.y - me.y, armor.x - me.x) * 180 / PI;//我和敌人之间的角度
 	double v1Angle;//敌人速度方向
 	double offset = 0;//这是偏移角
-	double dist_factor = 0.500;//修正因子,根据我的想法和距离来调整
+	double dist_factor = 0.420;//修正因子,根据我的想法和距离来调整
 	double armor_move = Distance(queue_lastFivePoint.front().x, queue_lastFivePoint.front().y,
 		queue_lastFivePoint.back().x, queue_lastFivePoint.back().y);//敌人前5帧运动的长度
 	if( armor_move > 6)//当敌人运动的时候计算偏移角
@@ -425,6 +433,8 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 		double d_AC = sqrt(d*d + r*r - 2*d*r*cos(ABC_angle / 180 * PI));//三角形的AC边
 		if(d < 300)
 			dist_factor *= d / 300;
+		if(d > 500)
+			dist_factor *= 1.2;
 		offset = acos((d - r*cos(ABC_angle / 180 * PI)) / d_AC) * 180 / PI * dist_factor;		
 		//加上偏移角
 		if(angle > 0 && angle < 180){
@@ -459,7 +469,7 @@ double RobotAI::howToRotate(Circle me, Circle armor,double weapon_rotation, doub
 //何时开炮？有障碍物的时候要节约子弹哦
 int RobotAI::doIFire(Circle me, RobotAI_RobotInformation armor,Circle obstacle[],int num_obs,double now_angle, double fire_angle)
 {
-	double min_dist = 1000;
+	double min_dist = 850;
 	if( abs(now_angle - fire_angle) > 10 )//角度太偏就不射
 		return 0;
 	

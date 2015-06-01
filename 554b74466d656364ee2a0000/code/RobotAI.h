@@ -4,10 +4,14 @@
 
 
 
-class RobotAI:public RobotAI_Interface
+class RobotAI :public RobotAI_Interface
 {
 protected:
 	//TODO:可以在这里添加你自己的成员变量
+	RobotAI_RobotInformation me;
+	RobotAI_RobotInformation enemy;
+	RobotAI_ArsenalInformation arsenal[2];
+	Circle obstacle[2];
 	double enemy_lastx;
 	double enemy_lasty;
 
@@ -118,18 +122,18 @@ public:
 
 	//TODO:可以在这里添加你自己的函数声明,并在RobotAI.cpp中编写相应的函数定义
 
-	//控制引擎或武器旋转
+	virtual double charge();
+	virtual double supply();
+	virtual double defend();
+
 	virtual RobotAI_Order rotate(double, double, bool, bool);
-	//返回两点距离
 	virtual double distance(double, double, double, double);
 	virtual double distance(Circle, Circle);
-	//返回两点连线与x轴的夹角
 	virtual double theta(double, double, double, double);
 	virtual double theta(Circle, Circle);
-	//返回两个两角的差值,范围(-180,180)
 	virtual double dtheta(double, double);
-	virtual Circle forecast(Circle, double, double, double);
+	virtual Circle forecast(double);
 	virtual bool block(Circle, Circle, double);
-	virtual Circle adjustdest(Circle);
-	virtual bool collision(Circle, Circle);
+	virtual double adjustdest(double);
+	virtual double adjustobstacle(double);
 };
