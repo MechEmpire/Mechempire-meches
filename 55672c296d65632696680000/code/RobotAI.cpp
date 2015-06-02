@@ -80,6 +80,7 @@ Circle me, he;
 RobotAI_RobotInformation myInfo, enemyInfo;
 Box boundary;
 vector<Circle> enemyTrack;
+vector<pdd> enemyVVector;
 
 const double pi = acos(-1);
 const double eps = 1e-3;
@@ -281,11 +282,6 @@ double dis(const pdd &a, const pdd &b){
 	return sqrt(sqr(a.X - b.X) + sqr(a.Y - b.Y));
 }
 
-double rot(const Circle &from, const Circle &to){
-	double ret = atan2(to.y - from.y, to.x - from.x) * 180. / pi;
-	AngleAdjust(ret);
-	return ret;
-}
 
 double timeCalc(weapontypename w, double dis){
 	switch (w)
@@ -364,6 +360,42 @@ int inObs(double x, double y, double d = 0){
 	return inObs(mkp(x, y), d);
 }
 
+double rot(const Circle &from, const Circle &to){
+	double ret = atan2(to.y - from.y, to.x - from.x) * 180. / pi;
+	AngleAdjust(ret);
+	return ret;
+}
+
+double rotVPure180(const pdd &from, const pdd &to){
+	return fpito180(acos((from.X*to.X + from.Y*to.Y) / (pureV(from)*pureV(to))));
+}
+double rotV180(const pdd &from, const pdd &to){
+	double sz = rotVPure180(from, to);
+	pdd tmp = counterClockRotate180(from, 90);
+	if (rotVPure180(tmp, to) < 90){
+		sz = -sz;
+	}
+//	printf("rotV180 sz:%.0lf, tmp:(%.0lf,%.0lf) from:(%.0lf,%.0lf), to:(%.0lf,%.0lf)\n", sz, tmp.X, tmp.Y,from.X,from.Y,to.X,to.Y);
+	return sz;
+}
+
+
+
+int trackinObs(Circle from, Circle to, double d = 0){
+	pdd v;
+	pdd tmp;
+	int flag;
+	v.X = to.x - from.x; v.Y = to.y - from.y;
+	int splitNum = 100;
+	rep(i, splitNum+1){
+		tmp.X = from.x + v.X*i / splitNum;
+		tmp.Y = from.y + v.Y*i / splitNum;
+		if ((flag = inObs(tmp, d)) != -1)
+			return flag;
+	}
+	return -1;
+}
+
 pdd fly_Bullet(bullettypename w, pdd f, pdd v, double t){
 	switch (w)
 	{
@@ -379,6 +411,35 @@ pdd fly_Bullet(bullettypename w, pdd f, pdd v, double t){
 
 pdd fly_Bullet(bullettypename w, Circle f, pdd v, double t){
 	return fly_Bullet(w, mkp(f.x, f.y), v, t);
+}
+
+bool bulletWillHit(const RobotAI_BattlefieldInformation& info, RobotAI_BulletInformation &bullet, int id = myID){
+	if (fabs(bullet.vx) < eps && fabs(bullet.vy) < eps) return false;
+	for (double t = 0; t < 500; t += 0.5){
+		pdd engine = fly_engine(info, id, t);
+		pdd nxtbull = fly_Bullet(bullet.type, bullet.circle, mkp(bullet.vx, bullet.vy), t);
+		if (dis(engine, nxtbull) < info.robotInformation[id].circle.r)
+			return true;
+	}
+	return false;
+}
+
+int bulletHitNum(const RobotAI_BattlefieldInformation& info, int id = myID){
+	//123
+		set<int> s;
+	for (double t = 0; t < 500; t += 0.5){
+		pdd engine = fly_engine(info, id, t);
+		rep(i, info.num_bullet){
+			if (info.bulletInformation[i].launcherID == id) continue;
+			RobotAI_BulletInformation bullet = info.bulletInformation[i];
+			pdd nxtbull = fly_Bullet(bullet.type, bullet.circle, mkp(bullet.vx, bullet.vy), t);
+
+			if (dis(engine, nxtbull) < info.robotInformation[id].circle.r){
+				s.insert(i);
+			}
+		}
+	}
+	return (int)s.size();
 }
 
 
@@ -410,16 +471,82 @@ int obsAble(const Circle &me, const Circle &he, double wrotation, const Circle o
 	return 1;
 }
 
-// Circle enemyNxtLoc(double t){
-// 	Circle ret;
-// 	123
-// }
+Circle enemyNxtLoc(int t){
+	Circle ret;
+	int l = enemyVVector.size();
+	int frameInterval = 35;
+	int num = 1;
+	pdd v = mkp(0, 0);
+	
+
+	if (t < frameInterval){
+		frameInterval = t;
+		num = 1;
+	}
+	else{
+		num = t / frameInterval+0.5;
+	}
+
+	if (l < t){
+		ret.x = enemyTrack[l - 1].x + enemyVVector[l - 1].X*t;
+		ret.y = enemyTrack[l - 1].y + enemyVVector[l - 1].Y*t;
+		return ret;
+	}
+	
+	v.X = enemyTrack[l - 1].x - enemyTrack[l - 1 - frameInterval].x;
+	v.Y = enemyTrack[l - 1].y - enemyTrack[l - 1 - frameInterval].y;
+	double szRot, len = pureV(v), multilen = 1;
+	pdd initV;
+	if (pureV(v) < eps){
+		return enemyTrack[l - 1];
+	}
+	if (pureV(enemyVVector[l - 1 - frameInterval]) < eps){
+		ret.x = he.x; ret.y = he.y;
+		rep(i, num){
+			ret.x += v.X; ret.y += v.Y;
+		}
+		return ret;
+	}
+	else{
+		szRot = rotV180(enemyVVector[l - 1 - frameInterval], v);		
+		if (pureV(mkp(enemyInfo.vx, enemyInfo.vy)) < eps){
+			int i = 1;
+			for (; i < frameInterval; i++){
+				if (enemyTrack[l - 1 - i].x != enemyTrack[l - 1].x || enemyTrack[l - 1 - i].y != enemyTrack[l - 1].y){
+					break;
+				}
+			}
+			if (i == frameInterval){
+				ret.x = he.x; ret.y = he.y;
+				rep(i, num){
+					ret.x += v.X; ret.y += v.Y;
+				}
+				return ret;
+			}
+			else{
+				initV = mkp(he.x - enemyTrack[l - 1 - i].x, he.y - enemyTrack[l - 1 - i].y);
+			}
+		}
+		else{
+			initV = mkp(enemyInfo.vx, enemyInfo.vy);
+		}
+
+		rep(i, num){
+			initV = clockRotate180(initV, szRot);
+		}
+		initV = multi(initV, len / pureV(initV));
+		if (pureV(mkp(myInfo.vx, myInfo.vy)) > eps && pureV(mkp(enemyVVector[l - 1 - frameInterval].X, enemyVVector[l - 1 - frameInterval].Y)) > eps)
+			initV = multi(initV, pureV(mkp(myInfo.vx, myInfo.vy)) / pureV(mkp(enemyVVector[l - 1 - frameInterval].X, enemyVVector[l - 1 - frameInterval].Y)));
+		ret.x = he.x+initV.X; ret.y = he.y+initV.Y;
+		return ret;
+	}
+}
 
 Circle hitLoc(const Circle tar, double vx, double vy, const Circle s, weapontypename w){
 	double cureps = 10000;
 	double curTime;
 	Circle ret, tmp;
-	for (double step = 0; step < 1500; step += 0.01){
+	for (double step = 0; step < 1500; step += 0.1){
 		tmp.x = tar.x + step*vx;
 		tmp.y = tar.y + step*vy;
 		double t = timeCalc(w, dis(tmp, s) - gun_radius(w));
@@ -435,6 +562,27 @@ Circle hitLoc(const Circle tar, double vx, double vy, const Circle s, weapontype
 	return ret;
 }
 
+Circle hitLoc2(const Circle tar,  const Circle s, weapontypename w){
+	double cureps = 10000;
+	double curTime;
+	Circle ret, tmp;
+	for (int step = dis(me, he) / (speed_Bullet(w) + speed_Engine(enemyInfo.engineTypeName))-0.5; step < dis(me, he) / (speed_Bullet(w) - speed_Engine(enemyInfo.engineTypeName)) + 1.5; step += 1){
+		tmp = enemyNxtLoc(step);
+		double t = timeCalc(w, dis(tmp, s) - gun_radius(w));
+		if (fabs(t - step) < cureps){
+			cureps = fabs(t - step);
+			ret = tmp;
+			curTime = step;
+		}
+		if (fabs(t - step) < 0.1){
+			return tmp;
+		}
+	}
+	return ret;
+
+}
+
+
 Circle addGunLen(const RobotAI_BattlefieldInformation& info, int id=myID){
 	Circle ret = info.robotInformation[id].circle;
 	double len = gun_radius(info.robotInformation[id].weaponTypeName);
@@ -447,7 +595,11 @@ Circle addGunLen(const RobotAI_BattlefieldInformation& info, int id=myID){
 
 //计算开火方向, 是否要开火
 int calcFire(const RobotAI_BattlefieldInformation& info, int &wturn, int &fireornot){
-	Circle nxt = hitLoc(he, enemyInfo.vx, enemyInfo.vy, me, myInfo.weaponTypeName);
+	Circle nxt;
+	//Circle nxt = hitLoc(he, enemyInfo.vx, enemyInfo.vy, me, myInfo.weaponTypeName);
+	if (dis(me, he) <= he.r + gun_radius(myInfo.weaponTypeName) + eps)
+		nxt = he;
+	else nxt = hitLoc2(he, me, myInfo.weaponTypeName);
 	int i = 0;
 	if (!inBox(nxt, he.r)){
 		// 		if (nxt.x < he.r) nxt.x = he.r + he.r - nxt.x;
@@ -477,7 +629,8 @@ int calcFire(const RobotAI_BattlefieldInformation& info, int &wturn, int &fireor
 		v = multi(v, exceed / dis(nxt, me));
 		nxt.x += v.X; nxt.y += v.Y;
 	}
-	else if ((i = inObs(nxt, he.r/2)) != -1){
+	else if ((i = trackinObs(he,nxt, he.r/2)) != -1){
+		printf("trackinObs  cur:(%.2lf,%.2lf),  nxt:(%.2lf,%.2lf)\n", he.x,he.y,nxt.x, nxt.y);
 
 		if (dis(obsLoc[i], he) < dis(nxt, he)){
 			pdd v;
@@ -496,10 +649,14 @@ int calcFire(const RobotAI_BattlefieldInformation& info, int &wturn, int &fireor
 			v1 = multi(v1, -1);
 			v2 = multi(v2, d / dis(he, nxt));
 			v = add(v1, v2);
-			while (inObs(nxt, he.r*2) != -1){
+			double len;
+			if (enemyInfo.engineTypeName == ET_UFO) len = he.r*2;
+			else len = he.r;
+			while (inObs(nxt, len) != -1){
 				nxt.x += v.X; nxt.y += v.Y;
 			}
 		}
+		printf("calcFire!inObs: nxt:(%.2lf,%.2lf), now(%.2lf,%.2lf) \n", nxt.x, nxt.y, he.x,he.y);
 	}
 	
 	double sz = rot(me,nxt) - myInfo.weaponRotation;
@@ -512,8 +669,8 @@ int calcFire(const RobotAI_BattlefieldInformation& info, int &wturn, int &fireor
 	else{
 	//	if (info.robotInformation[myID].hp<=35) printf("calcFire case3:  sz:%.2lf\n", sz);
 	//	if (fabs(sz) <= 1.8)
-			fireornot = obsAble( addGunLen(info,myID) , nxt, myInfo.weaponRotation, info.obstacle);
-		
+		fireornot = obsAble( addGunLen(info,myID) , nxt, myInfo.weaponRotation, info.obstacle);
+		if (dis(me, he) <= gun_radius(myInfo.weaponTypeName) + he.r) fireornot = 1;
 		wturn = 0;
 		if (fireornot == 1 && (dis(me, he) < me.r + he.r + 30)){
 			if (info.robotInformation[myID].hp < info.robotInformation[enemyID].hp && info.robotInformation[enemyID].hp>35)
@@ -626,7 +783,7 @@ void goCircleWithoutHistory(const Circle &center, const RobotAI_BattlefieldInfor
 	if (dt > 3) order.eturn = 1;
 	else if (dt < -3) order.eturn = -1;
 	else
-		order.eturn = 0;
+		order.eturn = 0,
 		order.run = 1;
 	
 	printf("goCircleWithoutHistory_Aim.x,y :(%.0lf,%.0lf) dt:%.2lf  Hp:%d\n", x, y, dt, info.robotInformation[myID].hp);
@@ -652,9 +809,10 @@ void init(const RobotAI_BattlefieldInformation& info, int id){
 	enemyInfo = info.robotInformation[enemyID];
 
 	enemyTrack.push_back(info.robotInformation[enemyID].circle);
-	if (enemyTrack.size() >= 200){
-		enemyTrack.erase(enemyTrack.begin(), enemyTrack.begin() + 100);
-	}
+	enemyVVector.push_back(mkp(info.robotInformation[enemyID].vx, info.robotInformation[enemyID].vy));
+// 	if (enemyTrack.size() >= 200){
+// 		enemyTrack.erase(enemyTrack.begin(), enemyTrack.begin() + 100);
+// 	}
 }
 
 // void TurnCircle(const Circle &center, const RobotAI_BattlefieldInformation& info, RobotAI_Order& order, int turn, double r=0){
@@ -752,9 +910,10 @@ int AttackWithDefend(const RobotAI_BattlefieldInformation& info, RobotAI_Order& 
 	int decide = 0;
 	Circle aim;
 
-	if (hasObsBetween(info, he, obs) && enemyInfo.weaponTypeName != WT_ElectricSaw /* && dis(me, he)>30+he.r */){
+	if (hasObsBetween(info, he, obs) && enemyInfo.weaponTypeName != WT_ElectricSaw  && dis(me, obs)<60+me.r+obs.r ){
 		//if (fabs(obs.r - info.obstacle[1].r)<=eps)
 		//goCircle(obs, info, order, obs.r + me.r, defaultTurn);
+		
 		goCircleWithoutHistory(obs, info, order, (obs.r + me.r), defaultTurn);
 		//goCircleWithoutHistory(obs, info, order, obs.r + me.r, defaultTurn);
 		//printf("AttackWithDefend_%d: 1 now-x:%.0lf,y:%.0lf  obs.x,y:%.2lf %.2lf\n", frame, me.x,me.y, obs.x, obs.y);
@@ -791,17 +950,13 @@ int AttackWithDefend(const RobotAI_BattlefieldInformation& info, RobotAI_Order& 
 	//	printf("AttackWithDefend %d: now-x:%.0lf,y:%.0lf  aim:(%.0lf,%.0lf) Circle size: %.2lf but dis:%.0lf\n", frame, me.x, me.y,aim.x,aim.y, circleR, dis(he, me));
 	}
  	
-	switch (decide)
-	{
-	case 0:
-		break;
-	case 1:
-		break;
-	case 2:
-		break;
-	default:
-		break;
-	}
+// 	if (enemyInfo.weaponTypeName != WT_Prism && enemyInfo.weaponTypeName != WT_Tesla
+// 		&& enemyInfo.weaponRotation != WT_ElectricSaw
+// 		&& bulletHitNum(info, myID) >= 1){
+// 		goCircleWithoutHistory(, info, order, 0.1);
+// 		printf("changeTurn_Change Turn!!! bulletHitNum:%d  hp:%d\n", bulletHitNum(info, myID), info.robotInformation[myID].hp);
+// 	}
+
 	if (info.robotInformation[myID].remainingAmmo == 0){
 		printf("Arsenal:%d: %.2lf,%.2lf\n", myID, info.arsenal[myID].circle.x, info.arsenal[myID].circle.y);
 		goCircleWithoutHistory(info.arsenal[myID].circle, info, order, 0.1);
@@ -825,53 +980,22 @@ RobotAI_BulletInformation getNearestBullet(const RobotAI_BattlefieldInformation&
 	return ret;
 }
 
-bool bulletWillHit(const RobotAI_BattlefieldInformation& info,RobotAI_BulletInformation &bullet, int id = myID){
-	if (fabs(bullet.vx) < eps && fabs(bullet.vy) < eps) return false;
-	for (double t = 0; t < 500; t += 0.5){
-		pdd engine = fly_engine(info, id, t);
-		pdd nxtbull = fly_Bullet(bullet.type, bullet.circle, mkp(bullet.vx, bullet.vy), t);
-		if (dis(engine, nxtbull) < info.robotInformation[id].circle.r)
-			return true;
-	}
-	return false;
-}
 
-int bulletHitNum(const RobotAI_BattlefieldInformation& info, int id = myID){
-	set<int> s;
-	for (double t = 0; t < 500; t += 0.5){
-		pdd engine = fly_engine(info, id, t);
-		rep(i, info.num_bullet){
-			if (info.bulletInformation[i].launcherID == id) continue;
-			RobotAI_BulletInformation bullet = info.bulletInformation[i];
-			pdd nxtbull = fly_Bullet(bullet.type, bullet.circle, mkp(bullet.vx, bullet.vy), t);
-
-			if (dis(engine, nxtbull) < info.robotInformation[id].circle.r){
-				s.insert(i);
-			}
-		}
-	}
-	return (int)s.size();
-}
 
 void changeTurn(const RobotAI_BattlefieldInformation& info){
-	int frameNum = 30;
-	if (frame - lastChangeFrameId <= frameNum) return;
+	int frameInterval = 60;
+	int frameNum = 10;
+	if (frame - lastChangeFrameId <= frameInterval) return;
 	double nx, ny;
 	nx = me.x + info.robotInformation[myID].vx * frameNum;
 	ny = me.y + info.robotInformation[myID].vy * frameNum;
-	if (inO(me.x, me.y) && !inBox(nx, ny, me.r/2)){
+	if (inO(me.x, me.y) && !inBox(nx, ny)){
 		lastChangeFrameId = frame;
 		defaultTurn *= -1;
 		return;
 	}
 
-	if (enemyInfo.weaponTypeName != WT_Prism && enemyInfo.weaponTypeName != WT_Tesla 
-		&& enemyInfo.weaponRotation != WT_ElectricSaw 
-		&& bulletHitNum(info, myID) >= 1){
-		defaultTurn *= -1;
-		lastChangeFrameId = frame;
-		printf("changeTurn_Change Turn!!! bulletHitNum:%d  hp:%d\n", bulletHitNum(info, myID), info.robotInformation[myID].hp);
-	}
+	
 }
 
 // void Aimto(const double aim, const RobotAI_BattlefieldInformation& info, int &eturn){
@@ -1044,6 +1168,7 @@ void RobotAI::onBattleStart(const RobotAI_BattlefieldInformation& info,int myID)
 	boundary = info.boundary;
 	
 	enemyTrack.clear();
+	enemyVVector.clear();
 	defaultTurn = -1;
 	if (dis(info.robotInformation[myID].circle, obsLoc[0]) < dis(info.robotInformation[myID].circle, obsLoc[1])){
 		if (info.robotInformation[1 - myID].weaponTypeName == WT_ElectricSaw)

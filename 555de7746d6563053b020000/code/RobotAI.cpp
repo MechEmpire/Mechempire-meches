@@ -45,33 +45,50 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 			if(info.robotInformation[1-myID].engineTypeName==ET_GhostTank){
 				order.run=1;
 				if(info.robotInformation[myID].remainingAmmo!=0){
-					int arsenalId=tool.GetSafeArsenal(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
-						info.arsenal,300.0);
-
 					if(order.wturn==0){
 						if(tool.canShoot(info.robotInformation[myID].circle,tool.GetProPointRPG(info.robotInformation[myID].circle),info.obstacle)
-							&&tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)>150
 							&&fireControl>=fireContorlMax){
-								order.fire=1;
+								if(tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)<500
+									&&tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)>150
+									||(info.robotInformation[myID].vx==0&&info.robotInformation[myID].vy==0)){
+										order.fire=1;
+								}else{
+									order.fire=0;
+								}							
 						}else{
 							order.fire=0;
 						}
-					}
-					if(arsenalId!=-1&&info.arsenal[arsenalId].respawning_time==0){
-						order.eturn=tool.TargetAt(info.robotInformation[myID].circle,arsenal[arsenalId],
+					}else order.fire=0;
+					if(tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)>=800&&
+						tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)<=1100){
+						Circle targetAddr;
+						targetAddr.y=info.robotInformation[myID].circle.y;
+						if(info.robotInformation[myID].circle.x<=683){
+							targetAddr.x=50+150;
+						}else{
+							targetAddr.x=1316-150;
+						}
+						order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 							info.robotInformation[myID].engineRotation,1.0);
+						if(abs(tool.GetDis(info.robotInformation[myID].circle,targetAddr))<=70){
+							order.run=-1;
+						}else{
+							order.run=1;
+						}
 					}else{
 						Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
 							info.obstacle,150);
 						order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 							info.robotInformation[myID].engineRotation,1.0);
-					}				
+						order.run=1;
+					}
+
 				}else{
 					int arsenalId=tool.GetSafeArsenal(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
-						info.arsenal,300.0);
+						info.arsenal,200.0);
 					if(arsenalId==-1){
 						Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
-							info.obstacle,150);
+							info.obstacle,90);
 						order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 							info.robotInformation[myID].engineRotation,1.0);
 					}else{
@@ -97,8 +114,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 							order.fire=0;
 						}
 					}else order.fire=0;
-					if(tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)>=800&&
-						tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)<=1000){
+					if(tool.GetDis(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle)>=800){
 							Circle targetAddr;
 							targetAddr.y=info.robotInformation[myID].circle.y;
 							if(info.robotInformation[myID].circle.x<=683){
@@ -115,7 +131,7 @@ void RobotAI::Update(RobotAI_Order& order,const RobotAI_BattlefieldInformation& 
 							}
 					}else{
 						Circle targetAddr=tool.GetTargetAddr(info.robotInformation[myID].circle,info.robotInformation[1-myID].circle,
-							info.obstacle,200);
+							info.obstacle,150);
 						order.eturn=tool.TargetAt(info.robotInformation[myID].circle,targetAddr,
 							info.robotInformation[myID].engineRotation,1.0);
 						order.run=1;
